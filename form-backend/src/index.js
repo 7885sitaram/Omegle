@@ -325,7 +325,7 @@ app.put("/users/:id/friend-requests/:requestId", async (req, res) => {
 
     if (status === "accepted") {
       const requesterId = request.from;
-      
+
       // Add to each other's friends list
       if (!user.friends.includes(requesterId)) {
         user.friends.push(requesterId);

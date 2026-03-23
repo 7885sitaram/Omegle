@@ -44,13 +44,20 @@ export default function AuthPage() {
       if (data?.user?.id) {
         try {
           localStorage.setItem("userId", data.user.id);
+          if (data.isProfileCompleted) {
+            localStorage.setItem("profileCompleted", "true");
+          }
         } catch {
           // ignore storage errors (e.g. SSR)
         }
       }
 
-      // Register flow -> auto login already handled on backend
-      router.push("/dashboard?setup=1");
+      // If profile is already completed, go to dashboard directly
+      if (data.isProfileCompleted) {
+        router.push("/dashboard");
+      } else {
+        router.push("/dashboard?setup=1");
+      }
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -60,7 +67,7 @@ export default function AuthPage() {
 
   const handleGoogle = async () => {
     setError(null);
-    await signIn("google", { callbackUrl: "/dashboard?setup=1" });
+    await signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (

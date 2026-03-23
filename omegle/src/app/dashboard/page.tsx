@@ -21,15 +21,33 @@ export default function DashboardPage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
 
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const id = window.localStorage.getItem("userId");
-      if (id) setCurrentUserId(id);
-    }
-  }, []);
+      if (id) {
+        setCurrentUserId(id);
 
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+        // Fetch user profile to see if it's completed
+        const checkProfileStatus = async () => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/users/${id}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.user?.displayName && data.user?.interests?.length > 0) {
+                window.localStorage.setItem("profileCompleted", "true");
+              }
+            }
+          } catch (err) {
+            console.error("Failed to check profile status", err);
+          }
+        };
+        checkProfileStatus();
+      }
+    }
+  }, [API_BASE_URL]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,37 +261,36 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (u.isFriend) {
-                            setCurrentUserId(u._id);
-                            setProfileDrawerOpen(true);
-                            setSearchOverlayOpen(false);
-                          } else if (!u.isRequested) {
-                            try {
-                              const res = await fetch(`${API_BASE_URL}/users/${u._id}/friend-requests`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ requesterId: currentUserId })
-                              });
-                              if (res.ok) {
-                                // Update local state for this user
-                                setSearchResults(prev => prev.map(item => item._id === u._id ? { ...item, isRequested: true } : item));
-                              }
-                            } catch (err) {
-                              console.error("Failed to send request", err);
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (u.isFriend) {
+                          setCurrentUserId(u._id);
+                          setProfileDrawerOpen(true);
+                          setSearchOverlayOpen(false);
+                        } else if (!u.isRequested) {
+                          try {
+                            const res = await fetch(`${API_BASE_URL}/users/${u._id}/friend-requests`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ requesterId: currentUserId })
+                            });
+                            if (res.ok) {
+                              // Update local state for this user
+                              setSearchResults(prev => prev.map(item => item._id === u._id ? { ...item, isRequested: true } : item));
                             }
+                          } catch (err) {
+                            console.error("Failed to send request", err);
                           }
-                        }}
-                        disabled={u.isRequested}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-semibold text-white transition ${
-                          u.isFriend ? "bg-green-600 hover:bg-green-500" : 
+                        }
+                      }}
+                      disabled={u.isRequested}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-semibold text-white transition ${u.isFriend ? "bg-green-600 hover:bg-green-500" :
                           u.isRequested ? "bg-gray-600 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-500"
                         }`}
-                      >
-                        {u.isFriend ? "View Profile" : u.isRequested ? "Requested" : "Add friend"}
-                      </button>
+                    >
+                      {u.isFriend ? "View Profile" : u.isRequested ? "Requested" : "Add friend"}
+                    </button>
                   </div>
                 ))}
               </div>

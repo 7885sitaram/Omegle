@@ -53,6 +53,8 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     passwordHash: { type: String, required: true },
+    displayName: { type: String, trim: true },
+    interests: [{ type: String, trim: true }],
   },
   { timestamps: true },
 )
@@ -78,6 +80,8 @@ function sendAuthResponse(res, user) {
     name: user.name,
   }
 
+  const isProfileCompleted = !!(user.displayName && user.interests?.length > 0)
+
   res
     .cookie("auth_token", token, {
       httpOnly: true,
@@ -89,6 +93,7 @@ function sendAuthResponse(res, user) {
     .json({
       user: safeUser,
       token,
+      isProfileCompleted,
     })
 }
 
@@ -164,17 +169,68 @@ app.get("/api/auth/me", async (req, res) => {
   }
 })
 
-const waiting = []
+const waiting = [] // Stores { id: socket.id, interests: [] }
 const activePair = new Map()
+
+const synonyms = {
+  coding: ["programming", "development", "software", "tech", "react", "nextjs", "javascript"],
+  cricket: ["sports", "ipl", "batting", "bowling", "world cup"],
+  music: ["singing", "guitar", "piano", "songs", "pop", "rock", "classical"],
+  gaming: ["pubg", "freefire", "valorant", "pc gaming", "esports", "ps5", "xbox"],
+  dance: ["hiphop", "classical", "dancing", "ballet"],
+  movie: ["netflix", "cinema", "films", "hollywood", "bollywood", "anime"],
+  travel: ["tourism", "hiking", "vlog", "mountains", "beach"],
+  reading: ["books", "novels", "literature", "poetry"],
+}
+
+function isSimilar(a, b) {
+  const normalizedA = a.toLowerCase().trim()
+  const normalizedB = b.toLowerCase().trim()
+  if (normalizedA === normalizedB) return true
+  return (
+    synonyms[normalizedA]?.includes(normalizedB) ||
+    synonyms[normalizedB]?.includes(normalizedA)
+  )
+}
+
+function calculateMatchScore(interests1, interests2) {
+  if (!interests1?.length || !interests2?.length) return 0
+  let score = 0
+  for (const i1 of interests1) {
+    for (const i2 of interests2) {
+      if (isSimilar(i1, i2)) {
+        score += 1
+      }
+    }
+  }
+  return score
+}
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id)
 
   if (waiting.includes(socket.id)) return
 
-  socket.on("start", () => {
+  socket.on("start", (data = {}) => {
+    const interests = data.interests || []
+    console.log(`Socket ${socket.id} starting with interests:`, interests)
+
     if (waiting.length > 0) {
-      const partner = waiting.shift()
+      // Find best match in waiting list
+      let bestMatchIdx = -1
+      let highestScore = -1
+
+      for (let i = 0; i < waiting.length; i++) {
+        const score = calculateMatchScore(interests, waiting[i].interests)
+        if (score > highestScore) {
+          highestScore = score
+          bestMatchIdx = i
+        }
+      }
+
+      // If we found someone (even with 0 score, it picks the first one)
+      const partnerObj = waiting.splice(bestMatchIdx, 1)[0]
+      const partner = partnerObj.id
       const roomId = uuid()
 
       activePair.set(socket.id, partner)
@@ -182,9 +238,11 @@ io.on("connection", (socket) => {
 
       socket.emit("matched", { roomId })
       socket.to(partner).emit("matched", { roomId })
+      console.log(`Matched ${socket.id} with ${partner} (Score: ${highestScore})`)
     } else {
-      waiting.push(socket.id)
+      waiting.push({ id: socket.id, interests })
       socket.emit("waiting")
+      console.log(`Socket ${socket.id} added to waiting list`)
     }
 
     socket.on("message", (msg) => {
@@ -204,7 +262,7 @@ io.on("connection", (socket) => {
   })
 
   function handleLeave(id) {
-    const idx = waiting.indexOf(id)
+    const idx = waiting.findIndex((w) => w.id === id)
     if (idx !== -1) {
       waiting.splice(idx, 1)
       return

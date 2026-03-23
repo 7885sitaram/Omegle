@@ -28,6 +28,7 @@ export default function ChatPage() {
   const [warnings, setWarnings] = useState(0);
   const [lastScore, setLastScore] = useState<string | null>(null);
   const [lastStatus, setLastStatus] = useState<string | null>(null);
+  const [userInterests, setUserInterests] = useState<string[]>([]);
   const warningsRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,11 +43,31 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
+    const fetchUserInterests = async () => {
+      if (typeof window === "undefined") return;
+      const userId = window.localStorage.getItem("userId");
+      if (!userId) return;
+
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+        const res = await fetch(`${apiBase}/users/${userId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setUserInterests(data.user?.interests || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch user interests", err);
+      }
+    };
+    fetchUserInterests();
+  }, []);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   const startChat = () => {
-    socket.emit("start");
+    socket.emit("start", { interests: userInterests });
     setStatus("waiting");
     setMessages([{ text: "Looking for a stranger...", sender: "system" }]);
   };
