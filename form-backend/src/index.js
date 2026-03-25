@@ -7,8 +7,22 @@ const multer = require("multer");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const { UploadFile } = require("./services/storage.service");
+const emailValidator = require("deep-email-validator");
+const nodemailer = require("nodemailer");
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// In-memory store for OTPs: Map<email, { otp: string, expiresAt: number, verified: boolean }>
+const otpStore = new Map();
+
+// Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 connectDb();
 const app = express();
@@ -38,6 +52,12 @@ app.post("/api/auth/register", async (req, res) => {
         .json({ message: "Email and password are required" });
     }
 
+    // Check if email was verified via OTP
+    const otpData = otpStore.get(email);
+    if (!otpData || !otpData.verified) {
+      return res.status(401).json({ message: "Email not verified. Please verify your email first." });
+    }
+
     const existing = await model.findOne({ email });
     if (existing) {
       return res.status(409).json({ message: "Email already registered" });
@@ -51,6 +71,9 @@ app.post("/api/auth/register", async (req, res) => {
       displayName: name,
     });
 
+    // Clear OTP data after successful registration
+    otpStore.delete(email);
+
     return res.status(201).json({
       message: "Registered successfully",
       user: {
@@ -58,10 +81,105 @@ app.post("/api/auth/register", async (req, res) => {
         email: user.email,
         displayName: user.displayName,
       },
+      isProfileCompleted: user.isProfileCompleted,
     });
   } catch (err) {
     console.error("Register error:", err);
     return res.status(500).json({ message: "Registration failed" });
+  }
+});
+
+// Send OTP
+app.post("/api/auth/send-otp", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // 1. Check if user already exists
+    const existing = await model.findOne({ email });
+    if (existing) {
+      return res.status(409).json({ message: "Email already registered" });
+    }
+
+    // 2. Deep validate email format & domain
+    const { valid, reason, validators } = await emailValidator.validate({
+      email: email,
+      validateRegex: true,
+      validateMx: true,
+      validateTypo: true,
+      validateDisposable: true,
+      validateSMTP: false // often causes timeouts or gets blocked, so we leave it false
+    });
+
+    // If it's completely invalid (like bad domain)
+    if (!valid && validators[reason]?.reason) {
+      return res.status(400).json({ 
+        message: "Invalid email address or domain does not exist.",
+        reason: validators[reason].reason 
+      });
+    }
+
+    // 3. Generate and store OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    otpStore.set(email, { otp, expiresAt, verified: false });
+
+    // 4. Send email
+    const mailOptions = {
+      from: `"StrangerChat" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: "Your StrangerChat Verification Code",
+      text: `Your verification code is: ${otp}\nThis code will expire in 10 minutes.`,
+      html: `
+        <div style="font-family: sans-serif; max-w: 400px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <h2 style="color: #2563eb; margin-top: 0;">StrangerChat</h2>
+          <p>Please use the following verification code to complete your registration:</p>
+          <h1 style="letter-spacing: 5px; color: #1e293b; background: #f1f5f9; padding: 15px; border-radius: 8px; text-align: center;">${otp}</h1>
+          <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">This code will expire in 10 minutes. If you didn't request this, ignore this email.</p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({ message: "Verification code sent to email" });
+  } catch (err) {
+    console.error("Send OTP error:", err);
+    return res.status(500).json({ message: "Failed to send verification code." });
+  }
+});
+
+// Verify OTP
+app.post("/api/auth/verify-otp", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const otpData = otpStore.get(email);
+    if (!otpData) {
+      return res.status(400).json({ message: "No pending verification for this email. Please request a new code." });
+    }
+
+    if (Date.now() > otpData.expiresAt) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
+    }
+
+    if (otpData.otp !== otp) {
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+
+    // Success
+    otpStore.set(email, { ...otpData, verified: true });
+    return res.status(200).json({ message: "Email verified successfully" });
+  } catch (err) {
+    console.error("Verify OTP error:", err);
+    return res.status(500).json({ message: "Failed to verify OTP" });
   }
 });
 
@@ -93,6 +211,7 @@ app.post("/api/auth/login", async (req, res) => {
         email: user.email,
         displayName: user.displayName,
       },
+      isProfileCompleted: user.isProfileCompleted,
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -156,11 +275,11 @@ app.post("/form", async (req, res) => {
     if (userId) {
       userDoc = await model.findByIdAndUpdate(
         userId,
-        { $set: profileData },
+        { $set: { ...profileData, isProfileCompleted: true } },
         { new: true, upsert: true, setDefaultsOnInsert: true }
       );
     } else {
-      userDoc = await model.create(profileData);
+      userDoc = await model.create({ ...profileData, isProfileCompleted: true });
     }
 
     res.status(201).json({

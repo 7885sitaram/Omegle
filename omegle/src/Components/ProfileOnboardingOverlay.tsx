@@ -15,6 +15,8 @@ interface AgeRange {
 interface Props {
   /** Optionally force the overlay open regardless of localStorage */
   forceOpen?: boolean
+  /** Called when the user successfully completes the profile setup */
+  onComplete?: () => void
 }
 
 const INTEREST_OPTIONS = [
@@ -40,7 +42,7 @@ const LANGUAGE_OPTIONS = [
   "Chinese",
 ]
 
-export function ProfileOnboardingOverlay({ forceOpen }: Props) {
+export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(1)
 
@@ -78,18 +80,9 @@ export function ProfileOnboardingOverlay({ forceOpen }: Props) {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    if (forceOpen) {
-      setOpen(true)
-      return
-    }
-
-    if (typeof window === "undefined") return
-    const completed = window.localStorage.getItem("profileCompleted")
-    if (completed !== "true") {
-      const timeout = setTimeout(() => setOpen(true), 400)
-      return () => clearTimeout(timeout)
-    }
-  }, [forceOpen])
+    // Always open since the parent only renders this component when profile is incomplete
+    setOpen(true)
+  }, [])
 
   useEffect(() => {
     if (!profileImageFile) {
@@ -216,6 +209,7 @@ export function ProfileOnboardingOverlay({ forceOpen }: Props) {
       setSuccess(true)
       setTimeout(() => {
         setOpen(false)
+        onComplete?.()
       }, 800)
     } catch (err: any) {
       setError(err.message || "Something went wrong")

@@ -13,6 +13,8 @@ export default function AuthPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [otpMode, setOtpMode] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const router = useRouter();
 
@@ -22,6 +24,28 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      if (mode === "register" && !otpMode) {
+        const sendRes = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const sendData = await sendRes.json().catch(() => ({}));
+        if (!sendRes.ok) throw new Error(sendData.message || "Failed to send verification code");
+        setOtpMode(true);
+        return;
+      }
+
+      if (mode === "register" && otpMode) {
+        const verifyRes = await fetch("/api/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp }),
+        });
+        const verifyData = await verifyRes.json().catch(() => ({}));
+        if (!verifyRes.ok) throw new Error(verifyData.message || "Invalid verification code");
+      }
+
       const endpoint =
         mode === "login" ? "/api/auth/login" : "/api/auth/register";
 
@@ -41,6 +65,15 @@ export default function AuthPage() {
       }
 
       const data = await res.json().catch(() => ({}));
+
+      if (mode === "register") {
+        setMode("login");
+        setOtpMode(false);
+        setOtp("");
+        setPassword("");
+        return;
+      }
+
       if (data?.user?.id) {
         try {
           localStorage.setItem("userId", data.user.id);
@@ -92,7 +125,11 @@ export default function AuthPage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex gap-2">
               <button
-                onClick={() => setMode("login")}
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setOtpMode(false);
+                }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                   mode === "login"
                     ? "bg-blue-600 text-white"
@@ -102,7 +139,11 @@ export default function AuthPage() {
                 Already have an account
               </button>
               <button
-                onClick={() => setMode("register")}
+                type="button"
+                onClick={() => {
+                  setMode("register");
+                  setOtpMode(false);
+                }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition ${
                   mode === "register"
                     ? "bg-green-600 text-white"
@@ -120,7 +161,9 @@ export default function AuthPage() {
           <p className="text-xs text-gray-500 mb-6">
             {mode === "login"
               ? "Use the email and password you registered with."
-              : "We’ll log you in automatically after registration."}
+              : otpMode
+              ? "Check your email for the verification code."
+              : "Create an account to get started."}
           </p>
 
           {error && (
@@ -130,48 +173,77 @@ export default function AuthPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "register" && (
+            {mode === "register" && otpMode ? (
               <div>
                 <label className="block text-xs mb-1 text-gray-400">
-                  Username
+                  Verification Code
                 </label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  placeholder="Your nickname"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-lg focus:outline-none focus:border-blue-500 text-center tracking-[0.5em] font-mono"
+                  placeholder="------"
+                  maxLength={6}
                   required
                 />
+                <p className="text-[10px] text-gray-400 mt-2 text-center">
+                  We sent a 6-digit code to <span className="text-white font-medium">{email}</span>
+                </p>
+                <button
+                  type="button"
+                  className="text-xs text-blue-500 hover:text-blue-400 mt-2 block mx-auto underline"
+                  onClick={() => setOtpMode(false)}
+                >
+                  Change Email
+                </button>
               </div>
+            ) : (
+              <>
+                {mode === "register" && (
+                  <div>
+                    <label className="block text-xs mb-1 text-gray-400">
+                      Username
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                      placeholder="Your nickname"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs mb-1 text-gray-400">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs mb-1 text-gray-400">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </>
             )}
-
-            <div>
-              <label className="block text-xs mb-1 text-gray-400">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs mb-1 text-gray-400">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                placeholder="••••••••"
-                required
-                minLength={6}
-              />
-            </div>
 
             <button
               type="submit"
@@ -182,7 +254,9 @@ export default function AuthPage() {
                 ? "Please wait..."
                 : mode === "login"
                 ? "Login"
-                : "Register & Continue"}
+                : otpMode
+                ? "Verify & Register"
+                : "Send Verification Code"}
             </button>
           </form>
 

@@ -15,6 +15,7 @@ export default function DashboardPage() {
 
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null); // null = not yet checked
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -30,21 +31,34 @@ export default function DashboardPage() {
       if (id) {
         setCurrentUserId(id);
 
-        // Fetch user profile to see if it's completed
+        // Fetch user profile to check if profile setup is completed
         const checkProfileStatus = async () => {
           try {
-            const res = await fetch(`${API_BASE_URL}/users/${id}`);
+            const res = await fetch(`${API_BASE_URL}/users/${id}?requesterId=${id}`);
             if (res.ok) {
               const data = await res.json();
-              if (data.user?.displayName && data.user?.interests?.length > 0) {
+              const completed = !!data.user?.isProfileCompleted;
+              setProfileCompleted(completed);
+              if (completed) {
                 window.localStorage.setItem("profileCompleted", "true");
+              } else {
+                window.localStorage.removeItem("profileCompleted");
               }
+            } else {
+              // Could not fetch - fall back to localStorage
+              const cached = window.localStorage.getItem("profileCompleted");
+              setProfileCompleted(cached === "true");
             }
           } catch (err) {
             console.error("Failed to check profile status", err);
+            const cached = window.localStorage.getItem("profileCompleted");
+            setProfileCompleted(cached === "true");
           }
         };
         checkProfileStatus();
+      } else {
+        // No userId in storage — treat as incomplete (will redirect via auth)
+        setProfileCompleted(false);
       }
     }
   }, [API_BASE_URL]);
@@ -197,7 +211,13 @@ export default function DashboardPage() {
       </main>
 
       <Footer />
-      <ProfileOnboardingOverlay forceOpen={forceOpen} />
+      {/* Only render the overlay after we know the profile status, and only if not completed */}
+      {profileCompleted === false && (
+        <ProfileOnboardingOverlay
+          forceOpen={forceOpen || profileCompleted === false}
+          onComplete={() => setProfileCompleted(true)}
+        />
+      )}
       {searchOverlayOpen && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-md">
           <div className="w-full max-w-md mx-4 bg-[#020617] border border-white/10 rounded-2xl p-4 shadow-2xl">

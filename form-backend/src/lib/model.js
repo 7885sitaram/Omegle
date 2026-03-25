@@ -144,6 +144,11 @@ const userSchema = new mongoose.Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+
+    isProfileCompleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
