@@ -33,7 +33,8 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (sessionStatus === "unauthenticated") {
+    const userId = typeof window !== "undefined" ? window.localStorage.getItem("userId") : null;
+    if (sessionStatus === "unauthenticated" && !userId) {
       router.replace("/");
     }
   }, [sessionStatus, router]);

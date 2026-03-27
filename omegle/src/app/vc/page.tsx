@@ -21,7 +21,8 @@ export default function VCPage() {
   const [roomId, setRoomId] = useState("");
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    const userId = typeof window !== "undefined" ? window.localStorage.getItem("userId") : null;
+    if (status === "unauthenticated" && !userId) {
       router.replace("/");
     }
   }, [status, router]);

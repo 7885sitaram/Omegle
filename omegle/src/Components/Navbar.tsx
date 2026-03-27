@@ -30,6 +30,10 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
   const [notificationsOpen, setNotificationsOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<any[]>([])
   const [userId, setUserId] = React.useState<string | null>(null)
+  const [userProfile, setUserProfile] = React.useState<{
+    displayName?: string
+    profilePicture?: string
+  } | null>(null)
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
 
@@ -39,6 +43,22 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
       setUserId(id)
     }
   }, [])
+
+  React.useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!userId) return
+      try {
+        const res = await fetch(`${API_BASE_URL}/users/${userId}?requesterId=${userId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setUserProfile(data.user)
+        }
+      } catch (err) {
+        console.error("Failed to fetch user profile", err)
+      }
+    }
+    fetchUserProfile()
+  }, [userId, API_BASE_URL])
 
   const fetchNotifications = React.useCallback(async () => {
     if (!userId) return
@@ -89,7 +109,12 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
         {centerContent ? (
           centerContent
         ) : (
-          <p className="text-sm text-gray-400">Talk to strangers anonymously</p>
+          <div className="flex items-center gap-2 overflow-hidden px-4 py-1.5 rounded-full bg-white/5 border border-white/5 max-w-sm">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest whitespace-nowrap">
+               Connect with the world
+            </p>
+          </div>
         )}
       </div>
 
@@ -162,17 +187,27 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
           <button
             type="button"
             onClick={onOpenProfile}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-gray-200 transition"
+            className="flex items-center gap-3 px-3 py-1.5 rounded-2xl bg-[#1e293b]/40 hover:bg-[#1e293b]/60 border border-white/5 hover:border-blue-500/30 transition-all duration-500 group relative overflow-hidden"
           >
-            <span className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 border border-white/20 flex items-center justify-center text-[10px] font-semibold">
-              U
-            </span>
-            <div className="flex flex-col items-start leading-tight">
-              <span className="text-[11px] font-medium">Profile</span>
-              <span className="text-[9px] text-green-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                Online
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            
+            <div className="w-8 h-8 rounded-xl overflow-hidden border border-white/10 flex items-center justify-center bg-[#0f172a] group-hover:shadow-[0_0_12px_rgba(59,130,246,0.3)] transition-all duration-300">
+              {userProfile?.profilePicture ? (
+                <img src={userProfile.profilePicture} alt="Avatar" className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-500" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-xs font-black uppercase">
+                  {userProfile?.displayName ? userProfile.displayName[0] : "U"}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col items-start leading-tight pr-1">
+              <span className="text-[12px] font-bold text-gray-100 group-hover:text-white transition-colors">
+                {userProfile?.displayName || "Loading..."}
               </span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
+                <span className="text-[10px] text-emerald-400 font-bold tracking-tight uppercase opacity-80">Online</span>
+              </div>
             </div>
           </button>
         )}
@@ -180,7 +215,7 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
         <button
           type="button"
           onClick={handleLogout}
-          className="px-3 py-1.5 rounded-full border border-red-500/50 text-[11px] font-semibold text-red-400 hover:bg-red-500/10 transition"
+          className="px-5 py-2 rounded-2xl bg-red-500/5 hover:bg-red-500 text-[11px] font-black uppercase tracking-widest text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 transition-all duration-500 shadow-lg shadow-red-500/5 hover:shadow-red-500/20 active:scale-95"
         >
           Logout
         </button>

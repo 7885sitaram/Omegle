@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Script from "next/script"
 
 type Gender = "male" | "female" | "other" | ""
 type PreferredGender = "male" | "female" | "other" | "any"
@@ -78,11 +79,30 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [recaptchaTokenState, setRecaptchaTokenState] = useState<string | null>(null)
+
+  // Trigger handleSubmit automatically after recaptcha is solved
+  useEffect(() => {
+    if (recaptchaTokenState && step === totalSteps) {
+      handleSubmit()
+    }
+  }, [recaptchaTokenState])
 
   useEffect(() => {
     // Always open since the parent only renders this component when profile is incomplete
     setOpen(true)
   }, [])
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [open])
 
   useEffect(() => {
     if (!profileImageFile) {
@@ -97,6 +117,25 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
       URL.revokeObjectURL(url)
     }
   }, [profileImageFile])
+
+  // Re-implementing a one-time render check on Step 3
+  useEffect(() => {
+    if (step === 3 && (window as any).grecaptcha) {
+      const maybeRender = () => {
+        try {
+          // If already rendered, this might throw, which is fine
+          if (document.getElementById("recaptcha-widget")?.innerHTML === "") {
+             (window as any).grecaptcha.render("recaptcha-widget", {
+                sitekey: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
+                theme: "dark",
+                callback: (token: string) => setRecaptchaTokenState(token)
+             });
+          }
+        } catch (e) {}
+      }
+      setTimeout(maybeRender, 100);
+    }
+  }, [step]);
 
   const toggleFromList = (
     value: string,
@@ -128,10 +167,17 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
 
   const handleSubmit = async () => {
     setSubmitting(true)
-    setError(null)
-
     try {
-      console.log("[ProfileOverlay] Submitting profile data...")
+      const token = recaptchaTokenState || (window as any).grecaptcha?.getResponse()
+      if (!token) {
+        setError("Please solve the reCAPTCHA challenge first.")
+        setSubmitting(false)
+        return
+      }
+
+      console.log("[ProfileOverlay] Submitting profile data with token:", token)
+
+      console.log("[ProfileOverlay] Submitting profile data with token:", token)
       const API_BASE_URL =
         process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
 
@@ -157,6 +203,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
         chatMode,
         anonymousMode,
         allowFriendRequests,
+        recaptchaToken: token,
       }
 
       const url = `${API_BASE_URL}/form`
@@ -221,11 +268,11 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md">
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-blue-500/10 via-transparent to-purple-500/10 animate-pulse" />
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500">
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-blue-500/20 via-transparent to-purple-500/20 animate-pulse" />
 
-      <div className="relative z-50 w-full max-w-3xl mx-4 rounded-3xl bg-[#020617]/90 border border-white/10 shadow-[0_24px_80px_rgba(15,23,42,0.9)] overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-blue-600/40 via-purple-600/30 to-sky-500/40">
+      <div className="relative z-[10001] w-full max-w-3xl mx-4 rounded-3xl bg-[#020617] border border-white/10 shadow-[0_24px_100px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-blue-600/40 via-purple-600/30 to-sky-500/40 flex-shrink-0">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-blue-200/80">
               StrangerChat Setup
@@ -265,7 +312,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
           </div>
         </div>
 
-        <div className="px-6 pb-4 max-h-[70vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="px-6 pb-4 flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
           {step === 1 && (
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
               <div>
@@ -750,11 +797,14 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                   no social links, just better vibes.
                 </p>
               </div>
+
+              {/* reCAPTCHA placeholder - will be shown when DOM is ready */}
+              <div id="recaptcha-widget-placeholder"></div>
             </div>
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-white/10 bg-[#020617]/90 flex items-center justify-between gap-3">
+        <div className="px-6 py-4 border-t border-white/10 bg-[#020617] flex items-center justify-between gap-3 flex-shrink-0">
           <div className="flex flex-col text-xs text-gray-500">
             {error && (
               <span className="text-red-400 text-xs mb-1">{error}</span>
@@ -800,6 +850,18 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
             )}
           </div>
         </div>
+        {/* Persistent reCAPTCHA container hidden until Step 3 */}
+        <div 
+          className="flex justify-center py-4 bg-[#020617]/50 border-t border-white/5"
+          style={{ display: step === 3 ? 'flex' : 'none' }}
+        >
+           <div id="recaptcha-widget"></div>
+        </div>
+        <Script 
+          src="https://www.google.com/recaptcha/api.js?render=explicit" 
+          async 
+          defer 
+        />
       </div>
     </div>
   )
