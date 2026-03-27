@@ -1,22 +1,26 @@
 const ImageKit = require("@imagekit/nodejs");
 
-const client = new ImageKit({
-  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
-});
-
-async function UploadFile(buffer, fileName = "profile-picture.jpg") {
-  const { toFile } = require("@imagekit/nodejs");
-
-  const file = await toFile(buffer, fileName);
-
-  const response = await client.files.upload({
-    file,
-    fileName,
+async function UploadFile(buffer, fileName = "feed-item.jpg") {
+  const ImageKit = require("@imagekit/nodejs");
+  const client = new ImageKit({
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
   });
 
-  return response.url;
+  console.log("ImageKit Uploading:", fileName, "Size:", buffer.length);
+
+  try {
+    const response = await client.upload({
+      file: buffer,
+      fileName: fileName,
+    });
+    console.log("ImageKit Upload Success:", response.url);
+    return response.url;
+  } catch (err) {
+    console.error("ImageKit Upload Error DETAILS:", err);
+    throw err;
+  }
 }
 
 module.exports = { UploadFile };

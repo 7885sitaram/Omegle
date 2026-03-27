@@ -13,6 +13,7 @@
   "type": "commonjs",
   "dependencies": {
     "@imagekit/nodejs": "^7.3.0",
+    "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "deep-email-validator": "^0.1.21",

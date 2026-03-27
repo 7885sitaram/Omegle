@@ -3,26 +3,33 @@ const dotenv = require("dotenv");
 dotenv.config();
 const connectDb = require("./db/db");
 const model = require("./lib/model");
+const Post = require("./lib/post");
 const multer = require("multer");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const { UploadFile } = require("./services/storage.service");
 const emailValidator = require("deep-email-validator");
 const nodemailer = require("nodemailer");
+const axios = require("axios");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 // In-memory store for OTPs: Map<email, { otp: string, expiresAt: number, verified: boolean }>
 const otpStore = new Map();
 
-// Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+// Nodemailer transporter initialization
+let transporter;
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+} else {
+  console.warn("WARNING: SMTP_USER or SMTP_PASS not set. Email verification will not work.");
+}
 
 connectDb();
 const app = express();
@@ -92,26 +99,30 @@ app.post("/api/auth/register", async (req, res) => {
 // Send OTP
 app.post("/api/auth/send-otp", async (req, res) => {
   try {
+    console.log(`Received send-otp request for email: ${req.body.email}`);
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
 
     // 1. Check if user already exists
+    console.log(`Checking if user exists: ${email}`);
     const existing = await model.findOne({ email });
     if (existing) {
       return res.status(409).json({ message: "Email already registered" });
     }
 
     // 2. Deep validate email format & domain
+    console.log(`Validating email: ${email}`);
     const { valid, reason, validators } = await emailValidator.validate({
       email: email,
       validateRegex: true,
       validateMx: true,
       validateTypo: true,
       validateDisposable: true,
-      validateSMTP: false // often causes timeouts or gets blocked, so we leave it false
+      validateSMTP: false
     });
+    console.log(`Email validation result: valid=${valid}, reason=${reason}`);
 
     // If it's completely invalid (like bad domain)
     if (!valid && validators[reason]?.reason) {
@@ -125,9 +136,16 @@ app.post("/api/auth/send-otp", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
+    console.log(`Generated OTP for ${email}: ${otp}`);
     otpStore.set(email, { otp, expiresAt, verified: false });
 
     // 4. Send email
+    if (!transporter) {
+      console.error("Transporter not initialized. Check SMTP_USER and SMTP_PASS.");
+      return res.status(500).json({ message: "Email service not configured. Please contact support." });
+    }
+
+    console.log(`Sending email to ${email} using ${process.env.SMTP_USER}`);
     const mailOptions = {
       from: `"StrangerChat" <${process.env.SMTP_USER}>`,
       to: email,
@@ -144,6 +162,7 @@ app.post("/api/auth/send-otp", async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
+    console.log(`Email sent successfully to ${email}`);
 
     return res.status(200).json({ message: "Verification code sent to email" });
   } catch (err) {
@@ -240,7 +259,30 @@ app.post("/form", async (req, res) => {
       chatMode,
       anonymousMode,
       allowFriendRequests,
+      recaptchaToken,
     } = req.body;
+
+    // 1. Verify reCAPTCHA
+    if (!recaptchaToken) {
+      return res.status(400).json({ message: "reCAPTCHA token is required" });
+    }
+
+    try {
+      const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+      const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaToken}`;
+      
+      const verificationResponse = await axios.post(verifyUrl);
+      if (!verificationResponse.data.success) {
+        console.error("reCAPTCHA verification failed:", verificationResponse.data);
+        return res.status(403).json({ 
+          message: "reCAPTCHA verification failed. Please try again.",
+          errors: verificationResponse.data["error-codes"]
+        });
+      }
+    } catch (verifyErr) {
+      console.error("reCAPTCHA API error:", verifyErr);
+      return res.status(500).json({ message: "Failed to verify human status" });
+    }
 
     let parsedDateOfBirth = undefined;
     if (dateOfBirth) {
@@ -610,6 +652,88 @@ app.post("/profile-img/:id", upload.single("image"), async (req, res) => {
   } catch (err) {
     console.error("Error uploading profile image:", err);
     res.status(500).json({ message: "Failed to upload profile image" });
+  }
+});
+
+// ============================
+// 📱 Social Feed & Content APIs
+// ============================
+
+// Create Post or Reel
+app.post("/api/feed", upload.single("media"), async (req, res) => {
+  try {
+    const { userId, type, caption } = req.body;
+
+    if (!userId || !type || !req.file) {
+      return res.status(400).json({ message: "userId, type, and media file are required" });
+    }
+
+    const mediaUrl = await UploadFile(
+      req.file.buffer,
+      req.file.originalname || `feed-${Date.now()}`
+    );
+
+    const post = await Post.create({
+      userId,
+      type,
+      mediaUrl,
+      caption,
+    });
+
+    res.status(201).json({ message: "Content posted successfully", post });
+  } catch (err) {
+    console.error("Feed creation error:", err);
+    res.status(500).json({ message: "Failed to create post" });
+  }
+});
+
+// Get User Feed
+app.get("/api/feed/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const posts = await Post.find({ userId }).sort({ createdAt: -1 });
+    res.status(200).json({ posts });
+  } catch (err) {
+    console.error("Fetch user feed error:", err);
+    res.status(500).json({ message: "Failed to fetch feed" });
+  }
+});
+
+// Get Global Feed (Randomized)
+app.get("/api/feed/global", async (req, res) => {
+  try {
+    // Return a random selection of posts/reels
+    const posts = await Post.aggregate([{ $sample: { size: 20 } }]);
+    // Populate user info (Aggregation doesn't populate automatically)
+    const populatedPosts = await Post.populate(posts, { path: "userId", select: "displayName profilePicture" });
+    res.status(200).json({ posts: populatedPosts });
+  } catch (err) {
+    console.error("Fetch global feed error:", err);
+    res.status(500).json({ message: "Failed to fetch global feed" });
+  }
+});
+
+// Like/Unlike Post
+app.post("/api/feed/:postId/like", async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const index = post.likes.indexOf(userId);
+    if (index === -1) {
+      post.likes.push(userId);
+    } else {
+      post.likes.splice(index, 1);
+    }
+
+    await post.save();
+    res.status(200).json({ likes: post.likes.length, isLiked: index === -1 });
+  } catch (err) {
+    console.error("Like post error:", err);
+    res.status(500).json({ message: "Failed to toggle like" });
   }
 });
 
