@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { useLanguage } from "@/lib/LanguageContext";
+import { LanguageSwitcher } from "@/Components/LanguageSwitcher";
+
+import { toast } from "sonner";
 
 type Mode = "login" | "register";
 
@@ -12,7 +16,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { t } = useLanguage();
   const [otpMode, setOtpMode] = useState(false);
   const [otp, setOtp] = useState("");
 
@@ -20,7 +24,6 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
 
     try {
@@ -32,6 +35,8 @@ export default function AuthPage() {
         });
         const sendData = await sendRes.json().catch(() => ({}));
         if (!sendRes.ok) throw new Error(sendData.message || "Failed to send verification code");
+        
+        toast.success("Verification code sent to your email!");
         setOtpMode(true);
         return;
       }
@@ -67,6 +72,7 @@ export default function AuthPage() {
       const data = await res.json().catch(() => ({}));
 
       if (mode === "register") {
+        toast.success("Account created successfully! Please login.");
         setMode("login");
         setOtpMode(false);
         setOtp("");
@@ -85,6 +91,8 @@ export default function AuthPage() {
         }
       }
 
+      toast.success(mode === "login" ? "Welcome back!" : "Registration successful!");
+
       // If profile is already completed, go to dashboard directly
       if (data.isProfileCompleted) {
         router.push("/dashboard");
@@ -92,32 +100,39 @@ export default function AuthPage() {
         router.push("/dashboard?setup=1");
       }
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      toast.error(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogle = async () => {
-    setError(null);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    try {
+      await signIn("google", { callbackUrl: "/dashboard" });
+    } catch (err) {
+      toast.error("Google Sign-In failed");
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#020617] text-white px-4">
+    <div className="min-h-screen relative flex items-center justify-center bg-[#020617] text-white px-4">
+      {/* Top Right: Language Switcher */}
+      <div className="absolute top-6 right-6 z-[100]">
+        <LanguageSwitcher />
+      </div>
+
       <div className="max-w-4xl w-full grid md:grid-cols-2 gap-10 items-center">
         <div className="hidden md:flex flex-col gap-4">
           <h1 className="text-4xl font-bold tracking-wide">
             Stranger<span className="text-blue-500">Chat</span>
           </h1>
           <p className="text-gray-400">
-            Talk to strangers anonymously with a clean, modern and secure
-            experience.
+            Talk to strangers, make friends, and explore the world.
           </p>
           <ul className="space-y-2 text-sm text-gray-400">
-            <li>• Anonymous, no public profile</li>
-            <li>• One-tap Google login or email</li>
-            <li>• Smart moderation keeps chats safe</li>
+            <li>• Anonymous & Secure</li>
+            <li>• Quick Match</li>
+            <li>• Verified Profiles</li>
           </ul>
         </div>
 
@@ -136,7 +151,7 @@ export default function AuthPage() {
                     : "bg-transparent text-gray-400 hover:bg-white/5"
                 }`}
               >
-                Already have an account
+                Already have an account?
               </button>
               <button
                 type="button"
@@ -150,33 +165,27 @@ export default function AuthPage() {
                     : "bg-transparent text-gray-400 hover:bg-white/5"
                 }`}
               >
-                New here? Register
+                New here?
               </button>
             </div>
           </div>
 
           <h2 className="text-xl font-semibold mb-1">
-            {mode === "login" ? "Login to continue" : "Create your account"}
+            {mode === "login" ? "Login to continue" : "Create an account"}
           </h2>
           <p className="text-xs text-gray-500 mb-6">
             {mode === "login"
-              ? "Use the email and password you registered with."
+              ? "Welcome back! Enter your details to start chatting."
               : otpMode
-              ? "Check your email for the verification code."
-              : "Create an account to get started."}
+              ? "We've sent a 6-digit verification code to your email."
+              : "Join millions of strangers and start making connections."}
           </p>
-
-          {error && (
-            <div className="mb-4 text-xs text-red-400 bg-red-500/10 border border-red-500/40 px-3 py-2 rounded-md">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "register" && otpMode ? (
               <div>
                 <label className="block text-xs mb-1 text-gray-400">
-                  Verification Code
+                  {t("auth.verify_code") || "Verification Code"}
                 </label>
                 <input
                   type="text"
@@ -210,14 +219,14 @@ export default function AuthPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="w-full bg-[#020617] border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                      placeholder="Your nickname"
+                      placeholder="Username"
                       required
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs mb-1 text-gray-400">Email</label>
+                  <label className="block text-xs mb-1 text-gray-400">Email Address</label>
                   <input
                     type="email"
                     value={email}
@@ -299,7 +308,7 @@ export default function AuthPage() {
           </button>
 
           <p className="mt-4 text-[10px] text-gray-500 text-center">
-            By continuing, you agree to our Terms & Privacy Policy.
+            By continuing, you agree to our Terms and Privacy Policy.
           </p>
         </div>
       </div>

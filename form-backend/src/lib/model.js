@@ -133,6 +133,9 @@ const userSchema = new mongoose.Schema(
 
     friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
 
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
+
     friendRequests: [
       {
         from: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
@@ -148,6 +151,59 @@ const userSchema = new mongoose.Schema(
     isProfileCompleted: {
       type: Boolean,
       default: false,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+
+    mobileNumber: {
+      type: String,
+      trim: true,
+    },
+
+    // ==============================
+    // 🛡️ Reputation & Trust System
+    // ==============================
+
+    reputation: {
+      good: { type: Number, default: 0 },
+      bad: { type: Number, default: 0 },
+      spam: { type: Number, default: 0 },
+      friendly: { type: Number, default: 0 },
+    },
+
+    trustScore: {
+      type: Number,
+      default: 0,
+    },
+
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
+
+    ratingsReceived: [
+      {
+        from: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
+        type: { type: String, enum: ["good", "bad", "spam", "friendly"] },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    reputationSummary: {
+      type: String,
+      default: "",
+    },
+
+    reputationSummaryUpdatedAt: {
+      type: Date,
     },
   },
   {

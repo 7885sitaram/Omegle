@@ -3,6 +3,8 @@
 import React from "react"
 import { useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
+import { useLanguage } from "@/lib/LanguageContext"
+import { LanguageSwitcher } from "./LanguageSwitcher"
 
 interface NavbarProps {
   centerContent?: React.ReactNode
@@ -34,6 +36,7 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
     displayName?: string
     profilePicture?: string
   } | null>(null)
+  const [loading, setLoading] = React.useState(true)
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
 
@@ -46,7 +49,10 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
 
   React.useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!userId) return
+      if (!userId) {
+        setLoading(false)
+        return
+      }
       try {
         const res = await fetch(`${API_BASE_URL}/users/${userId}?requesterId=${userId}`)
         if (res.ok) {
@@ -55,6 +61,8 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
         }
       } catch (err) {
         console.error("Failed to fetch user profile", err)
+      } finally {
+        setLoading(false)
       }
     }
     fetchUserProfile()
@@ -95,93 +103,28 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
   }
 
   return (
-    <nav className="w-full h-14 bg-[#0f172a] border-b border-white/10 flex items-center px-6 sticky top-0 z-50">
-      {/* Left : Logo */}
-      <div className="flex items-center gap-2">
-        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-        <h1 className="text-white font-semibold text-lg tracking-wide">
-          Stranger<span className="text-blue-400">Chat</span>
+    <nav className="w-full h-14 bg-[#0f172a] backdrop-blur-2xl border-b border-white/10 flex items-center px-4 md:px-8 fixed top-0 left-0 right-0 z-[10100]">
+      {/* Left: Logo */}
+      <div className="flex items-center gap-3 min-w-[200px]">
+        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-white shadow-lg shadow-blue-600/20 active:scale-95 transition-transform cursor-pointer">S</div>
+        <h1 className="text-white font-black text-xl tracking-tighter hidden sm:block">
+          Stranger<span className="text-blue-500 italic">Chat</span>
         </h1>
       </div>
 
-      {/* Center */}
-      <div className="flex-1 flex justify-center">
-        {centerContent ? (
-          centerContent
-        ) : (
-          <div className="flex items-center gap-2 overflow-hidden px-4 py-1.5 rounded-full bg-white/5 border border-white/5 max-w-sm">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest whitespace-nowrap">
-               Connect with the world
-            </p>
-          </div>
+      {/* Center: Search Context */}
+      <div className="flex-1 flex justify-center max-w-2xl mx-auto px-4">
+        {centerContent || (
+           <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/5 opacity-40">
+             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+             <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Connecting Global Chat</p>
+           </div>
         )}
       </div>
 
-      {/* Right : Notifications + Profile + Logout */}
-      <div className="flex items-center gap-4">
-        {userId && (
-          <div className="relative">
-            <button
-              onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="p-2 rounded-full hover:bg-white/5 text-gray-400 hover:text-white transition relative"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              {notifications.length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-[#0f172a]"></span>
-              )}
-            </button>
-
-            {notificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-[#1e293b] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                <div className="px-4 py-3 border-b border-white/10 bg-[#334155]/50">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-300">Friend Requests</h3>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-500 text-sm italic">
-                      No pending requests
-                    </div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div key={n._id} className="p-4 border-b border-white/5 hover:bg-white/5 transition group">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-700 overflow-hidden flex items-center justify-center border border-white/10">
-                            {n.from.profilePicture ? (
-                              <img src={n.from.profilePicture} alt="User" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-[10px] text-gray-400 capitalize">{n.from.displayName?.[0]}</span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-white tracking-tight">{n.from.displayName}</p>
-                            <p className="text-[10px] text-gray-400">wants to be your friend</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleRequestAction(n._id, "accepted")}
-                            className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold transition shadow-lg shadow-blue-600/20"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleRequestAction(n._id, "rejected")}
-                            className="flex-1 py-1.5 rounded-lg bg-[#334155] hover:bg-[#475569] text-gray-300 text-[10px] font-bold transition"
-                          >
-                            Ignore
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+      {/* Right: Profile Toggle Only */}
+      <div className="flex items-center justify-end gap-4 min-w-[200px]">
+        <LanguageSwitcher />
 
         {showProfile && (
           <button
@@ -202,7 +145,7 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
             </div>
             <div className="flex flex-col items-start leading-tight pr-1">
               <span className="text-[12px] font-bold text-gray-100 group-hover:text-white transition-colors">
-                {userProfile?.displayName || "Loading..."}
+                {loading ? "Loading..." : (userProfile?.displayName || "anonymous")}
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
@@ -211,14 +154,6 @@ function Navbar({ centerContent, showProfile, onOpenProfile }: NavbarProps) {
             </div>
           </button>
         )}
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="px-5 py-2 rounded-2xl bg-red-500/5 hover:bg-red-500 text-[11px] font-black uppercase tracking-widest text-red-500 hover:text-white border border-red-500/20 hover:border-red-500 transition-all duration-500 shadow-lg shadow-red-500/5 hover:shadow-red-500/20 active:scale-95"
-        >
-          Logout
-        </button>
       </div>
     </nav>
   )

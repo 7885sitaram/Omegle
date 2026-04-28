@@ -75,7 +75,7 @@ export function FeedUploadModal({ open, onClose, userId, onSuccess }: FeedUpload
       
       <div className="relative w-full max-w-xl bg-[#0f172a] border border-white/10 rounded-[32px] overflow-hidden flex flex-col shadow-2xl">
         <div className="p-6 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-blue-500/10 to-purple-500/10">
-          <h3 className="text-lg font-black text-white tracking-tight">Create New Content</h3>
+          <h3 className="text-lg font-black text-white tracking-tight">Create New Post</h3>
           <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-gray-400">
              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -90,13 +90,13 @@ export function FeedUploadModal({ open, onClose, userId, onSuccess }: FeedUpload
               onClick={() => setType("post")}
               className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${type === "post" ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Post (Square)
+              Square Post
             </button>
             <button 
               onClick={() => setType("reel")}
               className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${type === "reel" ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Reel (Vertical)
+              Vertical Reel
             </button>
           </div>
 
@@ -124,7 +124,7 @@ export function FeedUploadModal({ open, onClose, userId, onSuccess }: FeedUpload
                    </svg>
                 </div>
                 <p className="text-sm font-bold text-gray-300">Click to upload media</p>
-                <p className="text-[10px] text-gray-500 mt-1">Images for Posts, Videos for Reels</p>
+                <p className="text-[10px] text-gray-500 mt-1">High quality images and videos recommended</p>
               </>
             )}
             <input 
@@ -143,7 +143,7 @@ export function FeedUploadModal({ open, onClose, userId, onSuccess }: FeedUpload
                value={caption}
                onChange={(e) => setCaption(e.target.value)}
                className="w-full bg-[#020617] border border-white/5 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-blue-500/40 transition-all font-medium"
-               placeholder="Write something cool..."
+               placeholder="Write something cool about this post..."
                rows={4}
              />
           </div>
@@ -167,7 +167,7 @@ export function FeedUploadModal({ open, onClose, userId, onSuccess }: FeedUpload
              disabled={uploading || !file}
              className="flex-[2] py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[11px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
            >
-             {uploading ? "Sharing..." : `Share ${type === 'post' ? 'Post' : 'Reel'}`}
+             {uploading ? "Sharing..." : "Share Now"}
            </button>
         </div>
       </div>

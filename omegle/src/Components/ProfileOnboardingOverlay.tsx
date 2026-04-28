@@ -275,17 +275,17 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-blue-600/40 via-purple-600/30 to-sky-500/40 flex-shrink-0">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-blue-200/80">
-              StrangerChat Setup
+              Profile Setup
             </p>
             <h2 className="text-lg md:text-xl font-semibold text-white">
-              Let&apos;s tune your vibe ⚡
+              Customize Your Vibe
             </h2>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1 text-xs text-blue-100/80">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Better matches</span>
+              <span>Smart Matching Active</span>
             </div>
           </div>
         </div>
@@ -317,11 +317,10 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
               <div>
                 <p className="text-sm text-gray-300 mb-1">
-                  Start with the basics
+                  The Basics
                 </p>
                 <p className="text-xs text-gray-500">
-                  We don&apos;t show this publicly, it just helps us make your
-                  chats feel more human.
+                  Strangers will see your display name and optional bio.
                 </p>
               </div>
 
@@ -342,7 +341,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                     )}
                   </div>
                   <label className="relative inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[11px] font-medium bg-blue-600 hover:bg-blue-500 text-white cursor-pointer transition">
-                    <span>Upload avatar</span>
+                    <span>Change Avatar</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -361,7 +360,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs mb-1 text-gray-400">
-                      Full name
+                      Full Name
                     </label>
                     <input
                       value={fullName}
@@ -372,7 +371,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                   </div>
                   <div>
                     <label className="block text-xs mb-1 text-gray-400">
-                      Display name
+                      Display Name
                     </label>
                     <input
                       value={displayName}
@@ -387,7 +386,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
 
               <div>
                 <label className="block text-xs mb-1 text-gray-400">
-                  One-line bio
+                  Bio / Tagline
                 </label>
                 <textarea
                   value={bio}
@@ -395,7 +394,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                   rows={2}
                   maxLength={300}
                   className="w-full bg-[#020617] border border-gray-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/60 transition resize-none"
-                  placeholder="Example: Night owl coder who loves deep conversations and bad jokes."
+                  placeholder="I love coding and long walks on the beach..."
                 />
                 <p className="text-[10px] text-gray-500 text-right mt-1">
                   {bio.length}/300
@@ -405,7 +404,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs mb-1 text-gray-400">
-                    Gender
+                    Your Gender
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {["male", "female", "other"].map((g) => (
@@ -426,7 +425,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                 </div>
                 <div>
                   <label className="block text-xs mb-1 text-gray-400">
-                    Date of birth
+                    Date of Birth
                   </label>
                   <input
                     type="date"
@@ -451,7 +450,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                 </div>
                 <div>
                   <label className="block text-xs mb-1 text-gray-400">
-                    State / Region
+                    Region / State
                   </label>
                   <input
                     value={stateValue}
@@ -473,7 +472,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
 
               <div>
                 <label className="block text-xs mb-2 text-gray-400">
-                  Languages you&apos;re comfortable in
+                  Languages you speak
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {LANGUAGE_OPTIONS.map((lang) => (
@@ -498,7 +497,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                     value={customLanguage}
                     onChange={(e) => setCustomLanguage(e.target.value)}
                     className="flex-1 bg-[#020617] border border-gray-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/60 transition"
-                    placeholder="Add another language..."
+                    placeholder="Add other language..."
                   />
                   <button
                     type="button"
@@ -522,17 +521,16 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
               <div>
                 <p className="text-sm text-gray-300 mb-1">
-                  What are you into right now?
+                  Interests & Preferences
                 </p>
                 <p className="text-xs text-gray-500">
-                  We&apos;ll quietly use this to pair you with people into the
-                  same stuff.
+                  Help us find better matches for you by telling us what you like.
                 </p>
               </div>
 
               <div>
                 <label className="block text-xs mb-2 text-gray-400">
-                  Tap to select interests
+                  Tap to select your interests
                 </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {INTEREST_OPTIONS.map((interest) => (
@@ -557,7 +555,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                     value={customInterest}
                     onChange={(e) => setCustomInterest(e.target.value)}
                     className="flex-1 bg-[#020617] border border-gray-800 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/60 transition"
-                    placeholder="Add your own flavour (e.g. Startup ideas, Philosophy)…"
+                    placeholder="Add your own interest..."
                   />
                   <button
                     type="button"
@@ -579,7 +577,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs mb-2 text-gray-400">
-                    Who do you prefer to match with?
+                    Who do you prefer to chat with?
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {(["any", "male", "female", "other"] as PreferredGender[]).map(
@@ -605,7 +603,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
 
                 <div>
                   <label className="block text-xs mb-2 text-gray-400">
-                    Age range you&apos;re okay with
+                    Preferred Age Range
                   </label>
                   <div className="flex items-center gap-3 text-xs text-gray-300 mb-2">
                     <span className="px-2 py-1 rounded-full bg-white/5 border border-white/10">
@@ -657,7 +655,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs mb-1 text-gray-400">
-                    Primary language to match on
+                    Stranger's Language
                   </label>
                   <input
                     value={preferredLanguage}
@@ -683,7 +681,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                               : "bg-[#020617] border-gray-800 text-gray-400 hover:border-emerald-400/60 hover:text-white"
                           }`}
                         >
-                          {opt === "same_country" ? "Prefer my country" : "Global mix"}
+                          {opt === "same_country" ? "Prefer My Country" : "Global (Mix)"}
                         </button>
                       )
                     )}
@@ -697,11 +695,10 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
             <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
               <div>
                 <p className="text-sm text-gray-300 mb-1">
-                  Final touch: how do you like to chat?
+                  The Final Touch
                 </p>
                 <p className="text-xs text-gray-500">
-                  You can always change these later, this just sets your default
-                  StrangerChat mode.
+                  You can always change these later, this just sets your default StrangerChat mode.
                 </p>
               </div>
 
@@ -712,13 +709,13 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                       ? "Text"
                       : mode === "video"
                       ? "Video"
-                      : "Mix it"
+                      : "Mix It Up"
                   const desc =
                     mode === "text"
-                      ? "Low-key keyboard convos."
+                      ? "Low key text conversations"
                       : mode === "video"
-                      ? "Face-to-face energy."
-                      : "We&apos;ll pick what feels right."
+                      ? "High face-to-face energy"
+                      : "We'll pick the best for you"
                   return (
                     <button
                       key={mode}
@@ -743,10 +740,10 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                 <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-[#020617] border border-gray-800">
                   <div>
                     <p className="text-xs font-medium text-gray-200">
-                      Anonymous mode
+                      Anonymous Mode
                     </p>
                     <p className="text-[10px] text-gray-500">
-                      We hide personal info & keep things low-key.
+                      Hide your profile data from strangers
                     </p>
                   </div>
                   <button
@@ -767,10 +764,10 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                 <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-[#020617] border border-gray-800">
                   <div>
                     <p className="text-xs font-medium text-gray-200">
-                      Allow friend requests
+                      Allow Friend Requests
                     </p>
                     <p className="text-[10px] text-gray-500">
-                      Let good chats turn into repeat conversations.
+                      Let strangers send you requests
                     </p>
                   </div>
                   <button
@@ -792,9 +789,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
               <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/5 px-4 py-3 text-[11px] text-emerald-200 flex items-start gap-2">
                 <span className="mt-0.5 text-lg">✨</span>
                 <p>
-                  These preferences help match you with people who feel like
-                  your crowd. You&apos;re still anonymous — no public profile,
-                  no social links, just better vibes.
+                  These preferences help match you with people who feel like your crowd. You're still anonymous — no public profile, no social links, just better vibes.
                 </p>
               </div>
 
@@ -811,11 +806,11 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
             )}
             {success && (
               <span className="text-emerald-400 text-xs">
-                Saved! Tuning your matches…
+                Vibe saved successfully!
               </span>
             )}
             {!error && !success && (
-              <span>~1 minute setup. You&apos;re almost in.</span>
+              <span>Should take less than 1 minute</span>
             )}
           </div>
 
@@ -845,7 +840,7 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
                 onClick={handleSubmit}
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-black shadow-lg shadow-emerald-500/40 transition disabled:opacity-60"
               >
-                {submitting ? "Saving profile…" : "Save & jump in"}
+                {submitting ? "Please wait..." : "Finish Setup"}
               </button>
             )}
           </div>

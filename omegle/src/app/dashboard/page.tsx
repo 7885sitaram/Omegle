@@ -3,26 +3,31 @@
 import Footer from "@/Components/Footer";
 import Navbar from "@/Components/Navbar";
 import Link from "next/link";
-import { ProfileOnboardingOverlay } from "@/Components/ProfileOnboardingOverlay";
 import { UserProfileView } from "@/Components/UserProfileView";
 import { GlobalExplore } from "@/Components/GlobalExplore";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const setupFlag = searchParams.get("setup");
-  const forceOpen = setupFlag === "1";
 
   const [showProfile, setShowProfile] = useState(false);
   const [showGlobalExplore, setShowGlobalExplore] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null); // null = not yet checked
-  const [search, setSearch] = useState("");
+  const [showTruecallerResults, setShowTruecallerResults] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
+  
+  // Luxury Service Eligibility
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
+  const [trustScore, setTrustScore] = useState<number | null>(null);
 
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
@@ -41,6 +46,14 @@ export default function DashboardPage() {
               const data = await res.json();
               const completed = !!data.user?.isProfileCompleted;
               setProfileCompleted(completed);
+              setIsVerified(!!data.user?.isVerified);
+              
+              const repRes = await fetch(`${API_BASE_URL}/api/reputation/${id}`);
+              if (repRes.ok) {
+                const repData = await repRes.json();
+                setTrustScore(repData.trustScore || 0);
+              }
+
               if (completed) {
                 window.localStorage.setItem("profileCompleted", "true");
               } else {
@@ -67,7 +80,7 @@ export default function DashboardPage() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const q = search.trim();
+    const q = searchQuery.trim();
     if (!q) return;
     setSearchError(null);
     setSearchLoading(true);
@@ -90,47 +103,16 @@ export default function DashboardPage() {
     }
   };
 
-  const centerSearchBar = (
-    <form
-      onSubmit={handleSearch}
-      className="w-full max-w-lg flex items-center gap-2 group"
-    >
-      <div className="flex-1 relative">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-all duration-300">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search strangers by username..."
-          className="w-full bg-[#1e293b]/30 border border-white/5 rounded-2xl pl-12 pr-20 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/40 focus:bg-[#0f172a] focus:ring-[6px] focus:ring-blue-500/5 transition-all duration-500 shadow-inner group-hover:border-white/10"
-        />
-        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[9px] text-gray-400 font-black uppercase tracking-widest transition-all group-focus-within:bg-blue-500/10 group-focus-within:text-blue-400 group-focus-within:border-blue-500/20">
-          <span>Enter</span>
-          <span className="text-xs leading-none">↵</span>
-        </div>
-      </div>
-    </form>
-  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#020617] text-white">
-      <Navbar
-        centerContent={centerSearchBar}
-        showProfile={true}
-        onOpenProfile={() => setShowProfile(true)}
-      />
-
+    <div className="min-h-screen flex flex-col bg-transparent text-white">
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-20">
         <div className="max-w-2xl text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-wide">
             Stranger<span className="text-blue-500">Chat</span>
           </h1>
           <p className="text-gray-400 text-lg md:text-xl">
-            Connect with the world. Choose your way to chat.
+            Talk to strangers, make friends, and explore the world.
           </p>
         </div>
 
@@ -143,7 +125,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <h2 className="text-xl font-bold mb-2 text-white">Video Chat</h2>
-              <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Connect randomly via webcam.</p>
+              <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Face-to-face energy with random people.</p>
             </div>
           </Link>
 
@@ -155,7 +137,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <h2 className="text-xl font-bold mb-2 text-white">Text Chat</h2>
-              <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Simple and fast text connections.</p>
+              <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Classic anonymous text conversations.</p>
             </div>
           </Link>
 
@@ -167,33 +149,44 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <h2 className="text-xl font-bold mb-2 text-white">AI Partner</h2>
-              <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Chat with an intelligent AI.</p>
+              <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Chat with our intelligent AI companion.</p>
             </div>
           </Link>
 
-          <div
-            onClick={() => setShowGlobalExplore(true)}
-            className="group relative bg-[#1e293b] hover:bg-[#334155] border border-gray-700 hover:border-blue-500 rounded-[32px] p-8 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl h-full cursor-pointer"
+          <div 
+            onClick={() => {
+              if (isVerified === null || trustScore === null) {
+                toast.info("Checking eligibility...");
+                return;
+              }
+              if (!isVerified) {
+                toast.error("Luxury Alert: Mobile verification is required for Phone Mode!");
+                return;
+              }
+              if (trustScore < 5) {
+                toast.error(`Luxury Alert: Your reputation score (${trustScore}) is too low for Phone Mode. Minimum 5 required.`);
+                return;
+              }
+              router.push("/phone");
+            }} 
+            className="group cursor-pointer"
           >
-            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-               </svg>
+            <div className="bg-[#1e293b] hover:bg-[#334155] border border-gray-700 hover:border-yellow-500 rounded-[32px] p-8 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl h-full relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-lg z-10 shadow-lg">PRO</div>
+              <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-6 text-yellow-400 group-hover:bg-yellow-500 group-hover:text-white transition-colors duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold mb-2 text-white">StrangerPhone</h2>
+              <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Premium voice calls with verified users.</p>
             </div>
-            <h2 className="text-xl font-bold mb-2 text-white">Discovery</h2>
-            <p className="text-xs text-gray-400 group-hover:text-gray-200 transition-colors">Explore global posts and reels.</p>
           </div>
+
         </div>
       </main>
 
       <Footer />
-
-      {profileCompleted === false && (
-        <ProfileOnboardingOverlay
-          forceOpen={forceOpen || profileCompleted === false}
-          onComplete={() => setProfileCompleted(true)}
-        />
-      )}
 
       {searchOverlayOpen && (
         <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500">
@@ -201,9 +194,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-bold">
-                  Community Search
+                  User Search
                 </p>
-                <h3 className="text-sm font-bold text-white">Match found</h3>
+                <h3 className="text-sm font-bold text-white">Results Found</h3>
               </div>
               <button
                 type="button"
@@ -220,7 +213,7 @@ export default function DashboardPage() {
             </div>
 
             {searchLoading && (
-              <p className="text-xs text-gray-400">Searching…</p>
+              <p className="text-xs text-gray-400">Searching...</p>
             )}
             {searchError && (
               <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/40 px-3 py-2 rounded-lg">
@@ -229,7 +222,7 @@ export default function DashboardPage() {
             )}
 
             {!searchLoading && !searchError && searchResults.length === 0 && (
-              <p className="text-xs text-gray-400">No users found.</p>
+              <p className="text-xs text-gray-400">No users found for this query.</p>
             )}
 
             {searchResults.length > 0 && (
@@ -289,7 +282,7 @@ export default function DashboardPage() {
                           u.isRequested ? "bg-gray-600 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-500"
                         }`}
                     >
-                      {u.isFriend ? "View Profile" : u.isRequested ? "Requested" : "Add friend"}
+                      {u.isFriend ? "View Profile" : u.isRequested ? "Requested" : "Add Friend"}
                     </button>
                   </div>
                 ))}

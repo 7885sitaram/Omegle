@@ -4,3 +4,55 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+
+/* Hide Google Translate UI */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+.goog-te-banner,
+.goog-te-gadget-icon,
+.goog-te-gadget-simple,
+.goog-te-menu-value,
+.goog-te-menu-frame,
+#google_translate_element,
+div.goog-te-gadget {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
+}
+
+body {
+  top: 0 !important;
+  position: static !important;
+  margin-top: 0 !important;
+}
+
+iframe.skiptranslate {
+  display: none !important;
+}
+
+.goog-tooltip, 
+.goog-tooltip:hover {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Custom dropdown style to avoid being translated */
+.notranslate {
+  translate: no !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

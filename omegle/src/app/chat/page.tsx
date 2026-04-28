@@ -7,6 +7,9 @@ import { io } from "socket.io-client";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import FeedbackModal from "@/Components/Reputation/FeedbackModal";
+import WarningModal from "@/Components/Reputation/WarningModal";
+import { toast } from "sonner";
 
 const socket = io(process.env.NEXT_PUBLIC_URL!, {
   transports: ["websocket"],
@@ -29,6 +32,18 @@ export default function ChatPage() {
   const [lastScore, setLastScore] = useState<string | null>(null);
   const [lastStatus, setLastStatus] = useState<string | null>(null);
   const [userInterests, setUserInterests] = useState<string[]>([]);
+  const [partnerId, setPartnerId] = useState<string>("");
+  const [partnerName, setPartnerName] = useState<string>("");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
+  const [reputationInfo, setReputationInfo] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
+  
+  // Double-Lock Connection State
+  const [localReady, setLocalReady] = useState(false);
+  const [partnerReady, setPartnerReady] = useState(false);
+
   const warningsRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +63,7 @@ export default function ChatPage() {
       if (typeof window === "undefined") return;
       const userId = window.localStorage.getItem("userId");
       if (!userId) return;
+      setCurrentUserId(userId);
 
       try {
         const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
@@ -55,6 +71,7 @@ export default function ChatPage() {
         if (res.ok) {
           const data = await res.json();
           setUserInterests(data.user?.interests || []);
+          setDisplayName(data.user?.displayName || "Stranger");
         }
       } catch (err) {
         console.error("Failed to fetch user interests", err);
@@ -67,15 +84,51 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
+  // Synchronize when BOTH users are ready
+  useEffect(() => {
+    if (localReady && partnerReady && status !== "chatting") {
+      setStatus("chatting");
+      setMessages([{ text: "You are now chatting with a random stranger. Say hi!", sender: "system" }]);
+    }
+  }, [localReady, partnerReady, status]);
+
   const startChat = () => {
-    socket.emit("start", { interests: userInterests });
+    // Reset all status flags for a fresh start
+    setLocalReady(false);
+    setPartnerReady(false);
+    setPartnerId("");
+    setPartnerName("");
+    setReputationInfo(null);
+    setShowWarning(false);
+    setShowFeedback(false);
+
+    socket.emit("start", { interests: userInterests, userId: currentUserId, displayName: displayName });
     setStatus("waiting");
-    setMessages([{ text: "Looking for a stranger...", sender: "system" }]);
+    setMessages([{ text: "Looking for someone you can talk to...", sender: "system" }]);
   };
 
   const nextChat = () => {
+    const wasChatting = status === "chatting";
+    
     socket.emit("next");
-    window.location.reload();
+    setStatus("ideal");
+    setRoomId("");
+    setMessages((prev) => [
+      ...prev,
+      { text: "You have disconnected from the chat.", sender: "system" },
+    ]);
+    
+    // Reset flags
+    setLocalReady(false);
+    setPartnerReady(false);
+
+    // ONLY show feedback if the connection was fully finalized
+    if (wasChatting) {
+      setShowFeedback(true);
+    } else {
+      // If we clicked Next while waiting/warning, just start again immediately
+      startChat();
+    }
   };
 
   const sendMessage = async (e?: React.FormEvent) => {
@@ -92,7 +145,7 @@ export default function ChatPage() {
           body: JSON.stringify({ message: text }),
         });
 
-        if (!res.ok) throw new Error("Moderation failed");
+        if (!res.ok) throw new Error("Connection lost. Please try again.");
 
         const data = await res.json();
         setLastScore(data.score);
@@ -107,7 +160,7 @@ export default function ChatPage() {
             setMessages((prev) => [
               ...prev,
               {
-                text: "You have been disconnected for violating chat rules.",
+                text: "You have been disconnected for violating the community rules.",
                 sender: "system",
               },
             ]);
@@ -141,15 +194,46 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    socket.on("matched", ({ roomId }) => {
+    socket.on("matched", async ({ roomId, partnerId: pId, partnerName: pName }) => {
       setRoomId(roomId);
-      setStatus("chatting");
-      setMessages([
-        {
-          text: "You are now chatting with a random stranger. Say hi!",
-          sender: "system",
-        },
-      ]);
+      setPartnerId(pId || "");
+      setPartnerName(pName || "Stranger");
+      
+      // Initialize flags for the new match
+      setLocalReady(false);
+      setPartnerReady(false);
+
+      if (pId) {
+        try {
+          const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+          const res = await fetch(`${apiBase}/api/reputation/${pId}?t=${new Date().getTime()}`);
+          if (res.ok) {
+            const rep = await res.json();
+            setReputationInfo(rep);
+            if (rep.trustScore < 0 || rep.badge === "🔴 Risky") {
+              setShowWarning(true);
+              // We do NOT set localReady here. User must click Accept.
+            } else {
+              // User is safe, automatically set local ready and notify partner
+              setLocalReady(true);
+              socket.emit("match_confirmed");
+            }
+          } else {
+            // API Fallback
+            setLocalReady(true);
+            socket.emit("match_confirmed");
+          }
+        } catch (err) {
+          console.error("Reputation check failed:", err);
+          setLocalReady(true);
+          socket.emit("match_confirmed");
+        }
+      }
+    });
+
+    socket.on("match_confirmed", () => {
+      // Partner has confirmed they are ready
+      setPartnerReady(true);
     });
 
     socket.on("message", ({ msg }) => {
@@ -160,19 +244,28 @@ export default function ChatPage() {
       setStatus("waiting");
     });
 
-    socket.on("partner_left", () => {
+    socket.on("partner_left", ({ partnerId: idFromSocket, partnerName: name } = {}) => {
+      const wasChatting = status === "chatting";
       setStatus("ideal");
       setRoomId("");
+      if (idFromSocket) setPartnerId(idFromSocket);
+      if (name) setPartnerName(name);
+      
+      // ONLY show feedback if the connection was officially finalized
+      if (wasChatting) {
+        setShowFeedback(true);
+      }
+      
       setMessages((prev) => [
         ...prev,
-        { text: "Stranger has disconnected.", sender: "system" },
+        { text: `${name || 'Stranger'} has disconnected.`, sender: "system" },
       ]);
     });
 
     return () => {
       socket.off();
     };
-  }, []);
+  }, [status]); 
 
   return (
     <div className="min-h-screen flex flex-col bg-[#020617] text-white font-sans">
@@ -203,30 +296,17 @@ export default function ChatPage() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700">
+          <div className={`flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 ${showWarning ? 'blur-2xl pointer-events-none' : ''}`}>
             {status === "ideal" && (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
                 <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-10 w-10"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold mb-2">Ready to chat?</h3>
-                  <p className="text-gray-400">
-                    Join thousands of people online and start a conversation.
-                  </p>
+                  <p className="text-gray-400">Connect with millions across the globe for an anonymous experience.</p>
                 </div>
                 <button
                   onClick={startChat}
@@ -237,7 +317,7 @@ export default function ChatPage() {
               </div>
             )}
 
-            {status !== "ideal" &&
+            {(status === "waiting" || status === "chatting") &&
               messages.map((msg, i) => (
                 <div
                   key={i}
@@ -250,30 +330,18 @@ export default function ChatPage() {
                   }`}
                 >
                   <div
-                    className={`
-                  max-w-[80%] px-4 py-2 rounded-2xl text-sm md:text-base
-                  ${
-                    msg.sender === "system"
-                      ? msg.text.includes("Warning") ||
-                        msg.text.includes("disconnected")
-                        ? "bg-red-500/10 text-red-500 border border-red-500/20 px-6 py-2 rounded-full !not-italic !text-sm !font-bold my-2 animate-bounce"
-                        : "bg-transparent text-gray-500 italic text-xs uppercase tracking-wider"
-                      : msg.sender === "me"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-800 text-gray-200"
-                  }
-                `}
+                    className={`max-w-[80%] px-4 py-2 rounded-2xl text-sm md:text-base ${
+                      msg.sender === "system"
+                        ? msg.text.includes("Warning") || msg.text.includes("disconnected")
+                          ? "bg-red-500/10 text-red-500 border border-red-500/20 px-6 py-2 rounded-full !not-italic !text-sm !font-bold my-2 animate-bounce"
+                          : "bg-transparent text-gray-500 italic text-xs uppercase tracking-wider"
+                        : msg.sender === "me"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-800 text-gray-200"
+                    }`}
                   >
-                    {msg.sender === "me" && (
-                      <span className="text-[10px] block opacity-50 mb-0.5">
-                        You
-                      </span>
-                    )}
-                    {msg.sender === "stranger" && (
-                      <span className="text-[10px] block opacity-50 mb-0.5">
-                        Stranger
-                      </span>
-                    )}
+                    {msg.sender === "me" && <span className="text-[10px] block opacity-50 mb-0.5">You:</span>}
+                    {msg.sender === "stranger" && <span className="text-[10px] block opacity-50 mb-0.5">Stranger:</span>}
                     {msg.text}
                   </div>
                 </div>
@@ -285,13 +353,7 @@ export default function ChatPage() {
             <div className="px-4 py-2 bg-[#1e293b] border-t border-gray-700 flex justify-between items-center text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-gray-400">Moderation:</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                    lastStatus === "Good"
-                      ? "bg-green-500/20 text-green-500"
-                      : "bg-red-500/20 text-red-500"
-                  }`}
-                >
+                <span className={`px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${lastStatus === "Good" ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"}`}>
                   {lastStatus}
                 </span>
               </div>
@@ -303,10 +365,7 @@ export default function ChatPage() {
           )}
 
           {status === "chatting" && (
-            <form
-              onSubmit={sendMessage}
-              className="p-4 bg-[#1e293b] border-t border-gray-700 flex gap-4"
-            >
+            <form onSubmit={sendMessage} className="p-4 bg-[#1e293b] border-t border-gray-700 flex gap-4">
               <input
                 type="text"
                 value={input}
@@ -328,37 +387,45 @@ export default function ChatPage() {
           {status === "waiting" && (
             <div className="p-8 text-center bg-[#1e293b] border-t border-gray-700">
               <div className="inline-block w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-              <p className="text-gray-400 text-sm">Waiting for a partner...</p>
+              <p className="text-gray-400 text-sm">Searching for a partner...</p>
             </div>
           )}
         </div>
       </main>
 
       <div className="flex justify-center my-6">
-        <Link
-          href="/dashboard"
-          className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-full transition font-semibold border border-gray-600 flex items-center gap-2"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-            />
+        <Link href="/dashboard" className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-full transition font-semibold border border-gray-600 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
           Return Home
         </Link>
       </div>
 
       <Footer />
+
+      <FeedbackModal
+        isOpen={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        targetId={partnerId}
+        raterId={currentUserId}
+        partnerName={partnerName}
+      />
+
+      <WarningModal
+        isOpen={showWarning}
+        reputation={reputationInfo}
+        onAccept={() => {
+          setShowWarning(false);
+          setLocalReady(true);
+          socket.emit("match_confirmed");
+        }}
+        onReject={() => {
+          setShowWarning(false);
+          // If rejected, wasChatting is still false, so nextChat resets cleanly
+          nextChat();
+        }}
+      />
     </div>
   );
 }
-
