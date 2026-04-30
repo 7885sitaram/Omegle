@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   description: "A new way of connectivity ",
 };
 
+import { Suspense } from "react";
 import AppLayout from "@/Components/AppLayout";
 
 export default function RootLayout({
@@ -33,9 +34,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <AppLayout>
-            {children}
-          </AppLayout>
+          <Suspense fallback={<div className="min-h-screen bg-[#020617]" />}>
+            <AppLayout>
+              {children}
+            </AppLayout>
+          </Suspense>
           <Toaster position="top-center" richColors />
         </Providers>
         

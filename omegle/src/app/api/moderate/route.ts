@@ -4,7 +4,7 @@ const { google } = require("googleapis");
 const API_KEY = process.env.PERSPECTIVE_API_KEY;
 const DISCOVERY_URL = "https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1";
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<NextResponse> {
     try {
         const { message } = await req.json();
 
@@ -15,9 +15,11 @@ export async function POST(req: Request) {
             );
         }
 
-        // Wrap the discovery call in a promise for Next.js app router 
-        return new Promise((resolve) => {
-            google.discoverAPI(DISCOVERY_URL).then((client: any) => {
+        try {
+            const client = await google.discoverAPI(DISCOVERY_URL);
+            
+            // We use a promise wrapper here only for the callback-based analyze function
+            const result = await new Promise<NextResponse>((resolve) => {
                 client.comments.analyze({
                     key: API_KEY,
                     resource: {
@@ -33,19 +35,20 @@ export async function POST(req: Request) {
 
                     const score = response.data.attributeScores.TOXICITY.summaryScore.value;
 
-                    // Return both score and status consistent with the 'testing' server logic
                     resolve(NextResponse.json({
                         score: score.toFixed(4),
                         status: score > 0.5 ? "Bad" : "Good",
-                        // Keep the property names expected by existing evaluateModeration if possible
                         toxicity: score
                     }));
                 });
-            }).catch((err: any) => {
-                console.error("Discovery Error:", err);
-                resolve(NextResponse.json({ error: "Discovery failed" }, { status: 500 }));
             });
-        });
+
+            return result;
+
+        } catch (err: any) {
+            console.error("Discovery Error:", err);
+            return NextResponse.json({ error: "Discovery failed" }, { status: 500 });
+        }
 
     } catch (error) {
         console.error("Moderation API Error:", error);
