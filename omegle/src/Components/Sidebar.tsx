@@ -196,14 +196,19 @@ export function Sidebar({
       </div>
 
       {/* Mobile Bottom Bar */}
-      <div className="fixed bottom-0 left-0 w-full h-16 md:hidden bg-black/80 backdrop-blur-xl border-t border-white/10 z-[10000] flex items-center justify-around px-2">
-         {navItems.filter(i => ["home", "posts", "create", "messages", "profile"].includes(i.id)).map((item) => (
+      <div className="fixed bottom-0 left-0 w-full h-16 md:hidden bg-black/80 backdrop-blur-xl border-t border-white/10 z-[10000] flex items-center justify-around px-1">
+         {navItems.filter(i => ["home", "posts", "reels", "create", "messages", "profile"].includes(i.id)).map((item) => (
             <button
               key={item.id}
               onClick={item.action}
-              className="flex items-center justify-center w-12 h-12 text-gray-400 hover:text-white transition-all active:scale-90"
+              className={`flex flex-col items-center justify-center min-w-[55px] h-full transition-all active:scale-90 ${activeOption === item.id ? "text-white" : "text-gray-400 hover:text-white"}`}
             >
-              {item.icon}
+              <div className={`flex-shrink-0 mb-0.5 ${item.id === "create" ? "scale-110 text-blue-500" : "scale-90"}`}>
+                {item.icon}
+              </div>
+              <span className="text-[8px] font-black uppercase tracking-tighter opacity-60">
+                {item.label}
+              </span>
             </button>
          ))}
       </div>

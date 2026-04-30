@@ -232,7 +232,7 @@ export function GlobalExplore({ open, onClose, currentUserId, initialTab = "post
   if (!open) return null
 
   return (
-    <div className="fixed top-14 left-0 md:left-[64px] right-0 bottom-0 z-[9000] flex flex-col items-center bg-[#050505] animate-in slide-in-from-bottom duration-500 overflow-hidden">
+    <div className="fixed inset-0 z-[21000] flex flex-col items-center bg-[#050505] animate-in slide-in-from-bottom duration-500 overflow-hidden">
       {/* Premium Background Glows */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full"></div>
@@ -242,7 +242,7 @@ export function GlobalExplore({ open, onClose, currentUserId, initialTab = "post
       <div className="flex-shrink-0 w-full h-4" /> 
 
       {/* Instagram Style Grid (Gap-less 1px line) */}
-      <div className="flex-1 w-full max-w-[1012px] overflow-y-auto px-0 py-0 pb-20 hide-scrollbar z-10 transition-all pt-4">
+      <div className="flex-1 w-full max-w-[1012px] overflow-y-auto px-0 py-0 pb-32 md:pb-20 hide-scrollbar z-10 transition-all pt-0 md:pt-4">
          {loading ? (
             <div className="flex items-center justify-center p-20">
                <div className="w-12 h-12 border-4 border-white/20 border-t-blue-500 rounded-full animate-spin" />
@@ -310,21 +310,21 @@ export function GlobalExplore({ open, onClose, currentUserId, initialTab = "post
       {/* Post Detail Modal (Side-by-Side) */}
       {detailModalOpen && selectedPost && (
         <div 
-          className="fixed inset-0 z-[12000] bg-black/90 flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[22000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-0 md:p-10 animate-in fade-in duration-300"
           onClick={() => setDetailModalOpen(false)}
         >
           {/* Close button Top Right */}
           <button 
-            className="absolute top-4 right-4 md:top-8 md:right-8 text-white hover:opacity-70 transition-opacity z-[12001]"
+            className="absolute top-4 right-4 md:top-8 md:right-8 text-white hover:opacity-70 transition-opacity z-[12001] bg-black/40 rounded-full p-1"
             onClick={() => setDetailModalOpen(false)}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
           <div 
-            className="w-full max-w-6xl h-full max-h-[850px] bg-black border border-white/10 flex flex-col md:flex-row overflow-hidden rounded-md shadow-[0_0_50px_rgba(0,0,0,0.8)] relative animate-in zoom-in-95 duration-300"
+            className="w-full max-w-6xl h-full md:max-h-[850px] bg-black border-x md:border border-white/10 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden rounded-none md:rounded-md shadow-[0_0_50px_rgba(0,0,0,0.8)] relative animate-in zoom-in-95 duration-300"
             onClick={e => e.stopPropagation()}
           >
             {/* Left: Media Area */}
@@ -361,7 +361,7 @@ export function GlobalExplore({ open, onClose, currentUserId, initialTab = "post
             </div>
 
             {/* Right: Interaction Panel */}
-            <div className="w-full md:w-[450px] bg-black flex flex-col border-l border-white/10 flex-shrink-0">
+            <div className="w-full md:w-[400px] lg:w-[450px] bg-black flex flex-col border-l border-white/10 flex-shrink-0 pb-20 md:pb-0">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-white/5">
                 <div className="flex items-center gap-3">
@@ -501,42 +501,47 @@ export function GlobalExplore({ open, onClose, currentUserId, initialTab = "post
 
       {/* Share Post Modal */}
       {sharingPostId && (
-         <div 
-           className="fixed inset-0 z-[13000] bg-black/60 flex items-center justify-center p-4 animate-in fade-in"
-           onClick={() => setSharingPostId(null)}
-         >
+        <div 
+          className="fixed inset-0 z-[23000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setSharingPostId(null)}
+        >
             <div 
-              className="w-full max-w-sm bg-white rounded-xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
+              className="w-full max-w-sm bg-[#0f172a] border border-white/10 rounded-[28px] shadow-2xl flex flex-col max-h-[70vh] md:max-h-[500px] overflow-hidden animate-in zoom-in-95 duration-300"
               onClick={e => e.stopPropagation()}
             >
-               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                  <h3 className="font-bold text-center flex-1 text-black">Share Post</h3>
-                  <button onClick={() => setSharingPostId(null)} className="text-gray-500 hover:text-black">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+               <div className="p-5 border-b border-white/5 flex items-center justify-between">
+                  <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-white/50 text-center flex-1">Share To Strangers</h3>
+                  <button onClick={() => setSharingPostId(null)} className="text-gray-500 hover:text-white p-1 transition-colors">
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                      </svg>
                   </button>
                </div>
                
-               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 hidden-scrollbar">
+               <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4 scrollbar-none">
                   {friends.length === 0 ? (
-                     <div className="text-center text-gray-400 py-10">
-                        <p className="text-sm font-semibold">No friends found</p>
-                        <p className="text-xs mt-1">Make friends to share posts with them!</p>
+                     <div className="text-center text-gray-500 py-16">
+                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 opacity-20">
+                              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 110-8 4 4 0 010 8zm12 5h-6m3-3v6" />
+                           </svg>
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-widest">No connections found</p>
+                        <p className="text-[10px] mt-1 opacity-50">Add friends to share vibes!</p>
                      </div>
                   ) : (
                      friends.map(friend => (
-                        <div key={friend._id} className="flex items-center justify-between gap-3">
+                        <div key={friend._id} className="flex items-center justify-between gap-3 p-2 hover:bg-white/5 rounded-2xl transition-all">
                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                              <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-gradient-to-br from-blue-500/20 to-purple-500/20">
                                  <img src={friend.profilePicture || `https://ui-avatars.com/api/?name=${friend.displayName}`} alt="" className="w-full h-full object-cover" />
                               </div>
-                              <span className="font-bold text-sm text-black notranslate">{friend.displayName}</span>
+                              <span className="font-bold text-xs text-white notranslate">{friend.displayName}</span>
                            </div>
                            <button 
                              onClick={() => handleShareToFriend(friend._id)}
                              disabled={shareLoading || shareSuccess === friend._id}
-                             className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${shareSuccess === friend._id ? "bg-green-500 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"}`}
+                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${shareSuccess === friend._id ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/30" : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20"}`}
                            >
                              {shareSuccess === friend._id ? "Sent" : "Send"}
                            </button>

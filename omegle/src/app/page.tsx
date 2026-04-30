@@ -115,18 +115,18 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center bg-[#020617] text-white px-4">
+    <div className="min-h-screen relative flex items-center justify-center bg-[#020617] text-white px-0 md:px-4 py-8 md:py-0 overflow-y-auto">
       {/* Top Right: Language Switcher */}
-      <div className="absolute top-6 right-6 z-[100]">
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-[100]">
         <LanguageSwitcher />
       </div>
 
-      <div className="max-w-4xl w-full grid md:grid-cols-2 gap-10 items-center">
+      <div className="max-w-4xl w-full grid md:grid-cols-2 gap-8 md:gap-10 items-center px-4">
         <div className="hidden md:flex flex-col gap-4">
-          <h1 className="text-4xl font-bold tracking-wide">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-wide">
             Stranger<span className="text-blue-500">Chat</span>
           </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 text-lg">
             Talk to strangers, make friends, and explore the world.
           </p>
           <ul className="space-y-2 text-sm text-gray-400">
@@ -136,8 +136,14 @@ export default function AuthPage() {
           </ul>
         </div>
 
-        <div className="bg-[#020617]/60 border border-gray-800 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-[#020617]/60 border border-gray-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl w-full max-w-md mx-auto">
+          <div className="flex md:hidden items-center justify-center mb-8">
+             <h1 className="text-3xl font-black tracking-tighter">
+               Stranger<span className="text-blue-500 italic">Chat</span>
+             </h1>
+          </div>
+
+          <div className="flex items-center justify-between mb-6 overflow-x-auto no-scrollbar pb-1">
             <div className="flex gap-2">
               <button
                 type="button"

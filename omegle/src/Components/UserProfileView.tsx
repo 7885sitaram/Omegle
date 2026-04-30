@@ -253,17 +253,17 @@ export function UserProfileView({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300">
-      <div className="absolute inset-0 bg-[#020617]/95 backdrop-blur-xl" onClick={onClose} />
+    <div className="fixed inset-0 z-[25000] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500 overflow-hidden">
+      <div className="absolute inset-0 bg-[#020617]/98 backdrop-blur-3xl" onClick={onClose} />
 
-      <div className={`relative w-full max-w-4xl bg-[#0f172a] border ${user?.isVerified ? 'border-blue-500/30' : 'border-white/10'} rounded-[40px] shadow-[0_32px_128px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col h-full max-h-[850px]`}>
+      <div className={`relative w-full h-full md:h-auto md:max-w-4xl md:max-h-[90vh] bg-[#0f172a] border-x md:border ${user?.isVerified ? 'border-blue-500/30' : 'border-white/10'} rounded-none md:rounded-[48px] shadow-[0_32px_128px_rgba(0,0,0,1)] overflow-hidden flex flex-col transition-all duration-500`}>
         {user?.isVerified && (
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
         )}
 
         {/* Header Section */}
-        <div className={`px-8 md:px-16 pt-12 pb-8 border-b border-white/5 ${user?.isVerified ? 'bg-gradient-to-b from-blue-500/10 to-transparent' : 'bg-gradient-to-b from-white/5 to-transparent'}`}>
-          <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center md:items-start text-center md:text-left">
+        <div className={`px-4 md:px-16 pt-8 md:pt-12 pb-6 md:pb-8 border-b border-white/5 ${user?.isVerified ? 'bg-gradient-to-b from-blue-500/10 to-transparent' : 'bg-gradient-to-b from-white/5 to-transparent'}`}>
+          <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center md:items-start text-center md:text-left">
             {/* Avatar */}
             <div className="relative group">
               <div className={`absolute inset-0 bg-gradient-to-tr ${user?.isVerified ? 'from-blue-400 via-blue-600 to-blue-400' : 'from-blue-500 via-purple-500 to-pink-500'} rounded-full animate-spin-slow opacity-20 blur-xl group-hover:opacity-40 transition-opacity`} />
@@ -292,55 +292,55 @@ export function UserProfileView({
 
             {/* Info */}
             <div className="flex-1 flex flex-col gap-5">
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-black tracking-tight text-white">
+                  <h2 className="text-xl md:text-2xl font-black tracking-tight text-white">
                     @{user?.displayName || 'anonymous'}
                   </h2>
                   {user?.isVerified && (
-                     <span className="px-2 py-0.5 rounded-md bg-blue-500/20 border border-blue-500/30 text-[9px] font-black uppercase tracking-widest text-blue-400">
+                     <span className="px-2 py-0.5 rounded-md bg-blue-500/20 border border-blue-500/30 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400">
                        Verified
                      </span>
                   )}
                 </div>
                 {isSelf && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                     <button
                       onClick={() => setShowSettings(true)}
                       className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-gray-400 hover:text-white transition-all active:rotate-45"
                       title="Account Settings"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </button>
                     <button
                       onClick={() => setEditMode(!editMode)}
-                      className="px-6 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/5 text-[11px] font-black uppercase tracking-widest text-white transition-all active:scale-95 shadow-lg"
+                      className="px-3 md:px-6 py-1 md:py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/5 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-white transition-all active:scale-95 shadow-lg"
                     >
                       {editMode ? "Cancel" : "Edit Profile"}
                     </button>
                     {isSelf && user?.isVerified === false && (
                       <button
                         onClick={() => setShowVerifyModal(true)}
-                        className="px-6 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/20 text-[11px] font-black uppercase tracking-widest text-white transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
+                        className="px-3 md:px-6 py-1 md:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/20 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-white transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
                       >
-                        Verify Now
+                        Verify
                       </button>
                     )}
                     <button
                       onClick={() => setShowUpload(true)}
-                      className="px-6 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 border border-blue-500/20 text-[11px] font-black uppercase tracking-widest text-white transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+                      className="px-3 md:px-6 py-1 md:py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 border border-blue-500/20 text-[9px] md:text-[11px] font-black uppercase tracking-widest text-white transition-all active:scale-95 shadow-lg shadow-blue-500/20"
                     >
-                      Create Post
+                      Post
                     </button>
                   </div>
                 )}
                 {!isSelf && user && (
                   <button
                     onClick={handleFollowToggle}
-                    className={`px-8 py-1.5 rounded-xl border font-black uppercase tracking-widest text-[11px] transition-all active:scale-95 shadow-lg ${user.isFollowing ? "bg-white/10 text-white border-white/5 hover:bg-white/20" : "bg-blue-600 text-white border-blue-500/20 hover:bg-blue-500 shadow-blue-500/20"}`}
+                    className={`px-6 md:px-8 py-1 md:py-1.5 rounded-xl border font-black uppercase tracking-widest text-[9px] md:text-[11px] transition-all active:scale-95 shadow-lg ${user.isFollowing ? "bg-white/10 text-white border-white/5 hover:bg-white/20" : "bg-blue-600 text-white border-blue-500/20 hover:bg-blue-500 shadow-blue-500/20"}`}
                   >
                     {user.isFollowing ? "Following" : "Follow"}
                   </button>
@@ -348,28 +348,28 @@ export function UserProfileView({
               </div>
 
               {/* Stats */}
-              <div className="flex justify-center md:justify-start gap-10">
+              <div className="flex justify-center md:justify-start gap-6 md:gap-10">
                 <div className="text-center md:text-left">
-                  <span className="block text-lg font-black text-white">{posts.filter(p => p.type === 'post').length}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">Posts</span>
+                  <span className="block text-base md:text-lg font-black text-white">{posts.filter(p => p.type === 'post').length}</span>
+                  <span className="text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] text-gray-400 font-bold">Posts</span>
                 </div>
                 <div className="text-center md:text-left">
-                  <span className="block text-lg font-black text-white">{posts.filter(p => p.type === 'reel').length}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">Reels</span>
+                  <span className="block text-base md:text-lg font-black text-white">{posts.filter(p => p.type === 'reel').length}</span>
+                  <span className="text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] text-gray-400 font-bold">Reels</span>
                 </div>
                 <div 
                   onClick={() => fetchUserList("followers")}
                   className="text-center md:text-left cursor-pointer hover:opacity-70 transition-opacity"
                 >
-                  <span className="block text-lg font-black text-white">{user?.followersCount || 0}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">Followers</span>
+                  <span className="block text-base md:text-lg font-black text-white">{user?.followersCount || 0}</span>
+                  <span className="text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] text-gray-400 font-bold">Followers</span>
                 </div>
                 <div 
                   onClick={() => fetchUserList("following")}
                   className="text-center md:text-left cursor-pointer hover:opacity-70 transition-opacity"
                 >
-                  <span className="block text-lg font-black text-white">{user?.followingCount || 0}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold">Following</span>
+                  <span className="block text-base md:text-lg font-black text-white">{user?.followingCount || 0}</span>
+                  <span className="text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] text-gray-400 font-bold">Following</span>
                 </div>
               </div>
 
@@ -395,29 +395,29 @@ export function UserProfileView({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex justify-center border-b border-white/5">
+        <div className="flex justify-center border-b border-white/5 flex-shrink-0">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-8 py-4 text-[10px] uppercase tracking-[0.3em] font-black transition-all ${activeTab === 'overview' ? "text-blue-400 border-t-2 border-blue-400 -mt-[1px]" : "text-gray-500 hover:text-gray-300"}`}
+            className={`flex-1 md:flex-none px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black transition-all ${activeTab === 'overview' ? "text-blue-400 border-t-2 border-blue-400 -mt-[1px]" : "text-gray-500 hover:text-gray-300"}`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('posts')}
-            className={`px-8 py-4 text-[10px] uppercase tracking-[0.3em] font-black transition-all ${activeTab === 'posts' ? "text-blue-400 border-t-2 border-blue-400 -mt-[1px]" : "text-gray-500 hover:text-gray-300"}`}
+            className={`flex-1 md:flex-none px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black transition-all ${activeTab === 'posts' ? "text-blue-400 border-t-2 border-blue-400 -mt-[1px]" : "text-gray-500 hover:text-gray-300"}`}
           >
             Posts
           </button>
           <button
             onClick={() => setActiveTab('reels')}
-            className={`px-8 py-4 text-[10px] uppercase tracking-[0.3em] font-black transition-all ${activeTab === 'reels' ? "text-blue-400 border-t-2 border-blue-400 -mt-[1px]" : "text-gray-500 hover:text-gray-300"}`}
+            className={`flex-1 md:flex-none px-4 md:px-8 py-3 md:py-4 text-[9px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black transition-all ${activeTab === 'reels' ? "text-blue-400 border-t-2 border-blue-400 -mt-[1px]" : "text-gray-500 hover:text-gray-300"}`}
           >
             Reels
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8 md:p-12 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto p-4 md:p-12 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent pb-32 md:pb-12">
           {loading && !user && (
             <div className="max-w-2xl mx-auto space-y-12 animate-pulse">
                <div className="flex gap-8 items-center">
@@ -549,29 +549,29 @@ export function UserProfileView({
 {showSettings && (
   <div className="absolute inset-0 z-[120] bg-[#020617]/98 backdrop-blur-3xl animate-in slide-in-from-right-full duration-500 flex flex-col">
     {/* Header */}
-    <div className="p-8 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#020617]/50 backdrop-blur-md z-10">
-      <div className="flex items-center gap-4">
+    <div className="p-4 md:p-8 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#020617]/50 backdrop-blur-md z-10">
+      <div className="flex items-center gap-2 md:gap-4">
         <button onClick={() => setShowSettings(false)} className="p-2 rounded-xl hover:bg-white/5 text-gray-400 group transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
-          <h3 className="text-xl font-black text-white px-2">Account Settings</h3>
-          <p className="px-2 text-[10px] uppercase tracking-widest text-gray-500 font-bold">Manage your profile & preferences</p>
+          <h3 className="text-lg md:text-xl font-black text-white px-1 md:px-2">Account Settings</h3>
+          <p className="px-1 md:px-2 text-[8px] md:text-[10px] uppercase tracking-widest text-gray-500 font-bold">Manage your profile & preferences</p>
         </div>
       </div>
       <button
         onClick={handleSave}
         disabled={saving}
-        className="px-8 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+        className="px-4 md:px-8 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[9px] md:text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
       >
-        {saving ? "Syncing..." : "Save All"}
+        {saving ? "..." : "Save"}
       </button>
     </div>
 
     {/* Scrollable Categories */}
-    <div className="flex-1 overflow-y-auto px-8 md:px-16 py-10 space-y-16 scrollbar-hide">
+    <div className="flex-1 overflow-y-auto px-4 md:px-16 py-6 md:py-10 space-y-12 md:space-y-16 pb-32 scrollbar-hide">
       
       {/* Category 1: Identity */}
       <div className="space-y-6">

@@ -107,16 +107,16 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen flex flex-col bg-transparent text-white">
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-20">
-        <div className="max-w-2xl text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-wide">
-            Stranger<span className="text-blue-500">Chat</span>
+        <div className="max-w-2xl text-center mb-10 md:mb-16">
+          <h1 className="text-4xl md:text-6xl font-black mb-4 md:mb-6 tracking-tighter md:tracking-wide">
+            Stranger<span className="text-blue-500 italic">Chat</span>
           </h1>
-          <p className="text-gray-400 text-lg md:text-xl">
+          <p className="text-gray-400 text-base md:text-xl font-medium px-4">
             Talk to strangers, make friends, and explore the world.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl w-full px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 max-w-7xl w-full px-4">
           <Link href="/vc" className="group">
             <div className="bg-[#1e293b] hover:bg-[#334155] border border-gray-700 hover:border-blue-500 rounded-[32px] p-8 flex flex-col items-center text-center transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl h-full cursor-pointer">
               <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-6 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">

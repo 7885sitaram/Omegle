@@ -159,7 +159,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         centerContent={pathname === "/dashboard" ? globalSearchContent : null}
       />
 
-      <div className="flex flex-1 pt-14">
+      <div className="flex flex-1 pt-14 relative z-[100]">
         {/* Side Navigation: Below Header */}
         <Sidebar 
           currentUserId={currentUserId}
@@ -179,7 +179,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 md:ml-[64px] transition-all duration-300 pb-20 md:pb-0 overflow-y-auto">
+        <main className="flex-1 md:ml-[64px] transition-all duration-300 pb-20 md:pb-0 overflow-y-auto px-0 md:px-0">
           {children}
         </main>
       </div>
@@ -189,7 +189,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Click-away Overlay for Pop-overs */}
       {(showNotifications || showTruecallerResults) && (
         <div 
-          className="fixed inset-0 z-[10000] bg-black/5" 
+          className="fixed inset-0 z-[19000] bg-black/5 md:bg-transparent" 
           onClick={() => {
             setShowNotifications(false);
             setShowTruecallerResults(false);
@@ -226,26 +226,39 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* Global Search Overlay */}
       {searchOverlayOpen && (
-        <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/80 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="w-full max-w-md mx-4 bg-[#0f172a] border border-white/10 rounded-3xl p-5 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                 <h3 className="text-sm font-bold text-white">Search Results</h3>
-                 <button onClick={() => setSearchOverlayOpen(false)} className="text-gray-400 hover:text-white transition">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+        <div className="fixed inset-0 z-[20000] flex items-center justify-center bg-black/85 backdrop-blur-xl animate-in fade-in duration-300 p-4">
+           <div className="w-full max-w-[340px] md:max-w-md bg-[#0f172a] border border-white/10 rounded-[24px] p-5 md:p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-4 md:mb-5">
+                 <h3 className="text-sm font-bold text-white tracking-tight">Search Results</h3>
+                 <button onClick={() => setSearchOverlayOpen(false)} className="p-1 text-gray-400 hover:text-white transition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                        <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
                  </button>
               </div>
               {/* Simple results list */}
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                 {searchLoading && <p className="text-xs text-gray-500">Searching...</p>}
-                 {searchError && <p className="text-xs text-red-400">{searchError}</p>}
+              <div className="space-y-2 max-h-[300px] md:max-h-80 overflow-y-auto scrollbar-none">
+                 {searchLoading && (
+                   <div className="py-10 flex flex-col items-center gap-3">
+                     <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                     <p className="text-[10px] uppercase font-black tracking-widest text-gray-500">Searching...</p>
+                   </div>
+                 )}
+                 {searchError && <p className="text-center py-10 text-[10px] uppercase font-black tracking-widest text-red-400">{searchError}</p>}
+                 {!searchLoading && searchResults.length === 0 && !searchError && (
+                    <p className="text-center py-10 text-[10px] uppercase font-black tracking-widest text-gray-500">No matches found</p>
+                 )}
                  {searchResults.map(u => (
-                    <div key={u._id} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5">
-                       <span className="text-sm font-bold">{u.displayName}</span>
+                    <div key={u._id} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/5 hover:border-blue-500/30 transition-all">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 text-[10px] font-black uppercase">
+                            {u.displayName?.charAt(0)}
+                         </div>
+                         <span className="text-xs md:text-sm font-bold text-white">{u.displayName}</span>
+                       </div>
                         <button 
                           onClick={() => { setViewUserId(u._id); setShowProfile(true); setSearchOverlayOpen(false); }}
-                          className="text-[10px] uppercase font-black text-blue-500 hover:underline"
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-[9px] font-black uppercase tracking-widest text-white hover:bg-blue-500 transition-all"
                         >
                           View
                         </button>
@@ -256,27 +269,27 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       )}
 
-      {/* Global Notifications Pop-over - Aligned with Sidebar icon (6th item) */}
+      {/* Global Notifications Pop-over - Responsive Alignment */}
       {showNotifications && (
         <div 
           onClick={(e) => e.stopPropagation()}
-          className="fixed left-0 md:left-16 top-[330px] w-[90vw] md:w-80 bg-[#0f172a]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl p-4 z-[10001] animate-in slide-in-from-left-4 duration-300"
+          className="fixed left-4 right-4 md:left-16 md:right-auto top-1/2 -translate-y-1/2 md:translate-y-0 md:top-[330px] md:w-80 bg-[#0f172a]/95 backdrop-blur-2xl border border-white/10 rounded-[24px] shadow-2xl p-5 md:p-6 z-[20001] animate-in fade-in zoom-in-95 md:slide-in-from-left-4 duration-300"
         >
-           {/* Arrow connecting to Sidebar icon */}
+           {/* Arrow connecting to Sidebar icon (Desktop only) */}
            <div className="absolute left-[-6px] top-[15px] w-3 h-3 bg-[#0f172a] rotate-45 border-l border-t border-white/10 hidden md:block" />
 
-           <div className="flex items-center justify-between mb-3 relative">
-              <h3 className="text-sm font-bold text-white">Recent Notifications</h3>
+           <div className="flex items-center justify-between mb-4 relative">
+              <h3 className="text-sm font-bold text-white tracking-tight">Recent Notifications</h3>
               <button 
                 onClick={(e) => { e.stopPropagation(); setShowNotifications(false); }} 
                 className="text-gray-400 hover:text-white transition p-1"
               >
-                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                     <path d="M18 6L6 18M6 6l12 12" />
                  </svg>
               </button>
            </div>
-           <div className="text-gray-500 text-xs italic text-center py-10 border border-white/5 rounded-xl bg-white/5">
+           <div className="text-gray-500 text-[10px] uppercase font-black tracking-widest italic text-center py-12 border border-white/5 rounded-2xl bg-white/5">
               You're all caught up!
            </div>
         </div>

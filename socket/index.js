@@ -271,6 +271,20 @@ io.on("connection", (socket) => {
       }
     })
 
+    socket.on("typing", () => {
+      const session = activePair.get(socket.id)
+      if (session) {
+        io.to(session.partnerId).emit("typing")
+      }
+    })
+
+    socket.on("stop_typing", () => {
+      const session = activePair.get(socket.id)
+      if (session) {
+        io.to(session.partnerId).emit("stop_typing")
+      }
+    })
+
     socket.on("next", () => {
       handleLeave(socket.id)
     })

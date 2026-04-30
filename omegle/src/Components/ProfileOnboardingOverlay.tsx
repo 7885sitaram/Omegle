@@ -268,10 +268,10 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-xl transition-all duration-500">
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-blue-500/20 via-transparent to-purple-500/20 animate-pulse" />
+    <div className="fixed inset-0 z-[30000] flex items-center justify-center bg-[#020617]/95 backdrop-blur-xl transition-all duration-500 p-0 md:p-4">
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-blue-500/10 via-transparent to-purple-500/10 animate-pulse" />
 
-      <div className="relative z-[10001] w-full max-w-3xl mx-4 rounded-3xl bg-[#020617] border border-white/10 shadow-[0_24px_100px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative z-[10001] w-full h-full md:h-auto md:max-w-3xl rounded-none md:rounded-[32px] bg-[#020617] border-x md:border border-white/10 shadow-[0_24px_100px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-none md:max-h-[90vh]">
         <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-blue-600/40 via-purple-600/30 to-sky-500/40 flex-shrink-0">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-blue-200/80">
@@ -312,14 +312,14 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
           </div>
         </div>
 
-        <div className="px-6 pb-4 flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <div className="flex-1 px-4 md:px-8 pb-6 md:pb-8 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
           {step === 1 && (
-            <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            <div className="space-y-5 md:space-y-6 animate-[fadeIn_0.3s_ease-out] pt-4 md:pt-6">
               <div>
-                <p className="text-sm text-gray-300 mb-1">
+                <p className="text-sm font-bold text-gray-200">
                   The Basics
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-[10px] md:text-xs text-gray-500">
                   Strangers will see your display name and optional bio.
                 </p>
               </div>
@@ -518,12 +518,12 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
             </div>
           )}
           {step === 2 && (
-            <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            <div className="space-y-5 md:space-y-6 animate-[fadeIn_0.3s_ease-out] pt-4 md:pt-6">
               <div>
-                <p className="text-sm text-gray-300 mb-1">
+                <p className="text-sm font-bold text-gray-200">
                   Interests & Preferences
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-[10px] md:text-xs text-gray-500">
                   Help us find better matches for you by telling us what you like.
                 </p>
               </div>
@@ -692,12 +692,12 @@ export function ProfileOnboardingOverlay({ forceOpen, onComplete }: Props) {
           )}
 
           {step === 3 && (
-            <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+            <div className="space-y-5 md:space-y-6 animate-[fadeIn_0.3s_ease-out] pt-4 md:pt-6">
               <div>
-                <p className="text-sm text-gray-300 mb-1">
+                <p className="text-sm font-bold text-gray-200">
                   The Final Touch
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-[10px] md:text-xs text-gray-500">
                   You can always change these later, this just sets your default StrangerChat mode.
                 </p>
               </div>

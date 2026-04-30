@@ -930,6 +930,37 @@ app.post("/api/reputation/rate", async (req, res) => {
   }
 });
 
+// Automated penalty for bad moderation (AI Flagged)
+app.post("/api/reputation/moderation-penalty", async (req, res) => {
+  try {
+    const { userId, score } = req.body;
+    if (!userId) return res.status(400).json({ message: "userId is required" });
+
+    // Deduct trust score based on toxicity (clamped between -1 and -5)
+    const penalty = Math.max(1, Math.min(5, Math.floor((score || 0.5) * 5)));
+    
+    const user = await model.findByIdAndUpdate(
+      userId,
+      { 
+        $inc: { trustScore: -penalty, "reputation.bad": 1 },
+        $set: { reputationSummary: "" } // Force AI refresh
+      },
+      { new: true }
+    );
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ 
+      message: "Penalty applied", 
+      newScore: user.trustScore,
+      penalty
+    });
+  } catch (err) {
+    console.error("Moderation penalty error:", err);
+    res.status(500).json({ message: "Internal error" });
+  }
+});
+
 // Get detailed reputation summary with AI
 app.get("/api/reputation/:userId", async (req, res) => {
   try {

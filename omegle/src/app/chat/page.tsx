@@ -131,21 +131,37 @@ export default function ChatPage() {
     }
   };
 
+  // Keyboard shortcut: Esc for Next
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && status !== "ideal") {
+        nextChat();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [status, roomId]);
+
   const sendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const text = input.trim();
-    if (text && status === "chatting") {
-      try {
-        setLastScore(null);
-        setLastStatus(null);
+    if (!text || status !== "chatting") return;
 
+    // OPTIMISTIC UPDATE: Instant speed!
+    setMessages((prev) => [...prev, { text, sender: "me" }]);
+    socket.emit("message", text);
+    setInput("");
+
+    // BACKGROUND MODERATION
+    (async () => {
+      try {
         const res = await fetch("/api/moderate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: text }),
         });
 
-        if (!res.ok) throw new Error("Connection lost. Please try again.");
+        if (!res.ok) return; // Silent fail for moderation in bg
 
         const data = await res.json();
         setLastScore(data.score);
@@ -156,42 +172,49 @@ export default function ChatPage() {
           const currentWarnings = warningsRef.current;
           setWarnings(currentWarnings);
 
+          // PENALTY: Deduct reputation in DB
+          try {
+            const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+            await fetch(`${apiBase}/api/reputation/moderation-penalty`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: currentUserId, score: data.score }),
+            });
+          } catch (pErr) {
+            console.error("Failed to apply penalty", pErr);
+          }
+
           if (currentWarnings >= 3) {
             setMessages((prev) => [
               ...prev,
               {
-                text: "You have been disconnected for violating the community rules.",
+                text: "CRITICAL: You have been disconnected for multiple violations. Your trust score has been penalized.",
                 sender: "system",
               },
             ]);
             setTimeout(() => {
               nextChat();
-            }, 2000);
+            }, 3000);
             return;
           }
 
           setMessages((prev) => [
             ...prev,
             {
-              text: `Warning ${currentWarnings}/3: Your message was flagged as Bad (Score: ${data.score}). Please keep it respectful.`,
+              text: `⚠️ WARNING (${currentWarnings}/3): Abuse detected. Please be respectful or you will be banned. (Trust Score Deducted)`,
               sender: "system",
             },
           ]);
-          setInput("");
-          return;
+          toast.error("Message flagged for abuse. Please stay respectful!");
         }
-
-        socket.emit("message", text);
-        setMessages((prev) => [...prev, { text, sender: "me" }]);
-        setInput("");
       } catch (error) {
-        console.error("Error:", error);
-        socket.emit("message", text);
-        setMessages((prev) => [...prev, { text, sender: "me" }]);
-        setInput("");
+        console.error("Bg Moderation Error:", error);
       }
-    }
+    })();
   };
+
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     socket.on("matched", async ({ roomId, partnerId: pId, partnerName: pName }) => {
@@ -202,6 +225,7 @@ export default function ChatPage() {
       // Initialize flags for the new match
       setLocalReady(false);
       setPartnerReady(false);
+      setIsPartnerTyping(false);
 
       if (pId) {
         try {
@@ -238,6 +262,15 @@ export default function ChatPage() {
 
     socket.on("message", ({ msg }) => {
       setMessages((prev) => [...prev, { text: msg, sender: "stranger" }]);
+      setIsPartnerTyping(false);
+    });
+
+    socket.on("typing", () => {
+      setIsPartnerTyping(true);
+    });
+
+    socket.on("stop_typing", () => {
+      setIsPartnerTyping(false);
     });
 
     socket.on("waiting", () => {
@@ -248,6 +281,7 @@ export default function ChatPage() {
       const wasChatting = status === "chatting";
       setStatus("ideal");
       setRoomId("");
+      setIsPartnerTyping(false);
       if (idFromSocket) setPartnerId(idFromSocket);
       if (name) setPartnerName(name);
       
@@ -267,13 +301,26 @@ export default function ChatPage() {
     };
   }, [status]); 
 
+  // Handle typing status
+  useEffect(() => {
+    if (input.trim() && status === "chatting") {
+      socket.emit("typing");
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit("stop_typing");
+      }, 3000);
+    } else {
+      socket.emit("stop_typing");
+    }
+  }, [input, status]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#020617] text-white font-sans">
       <Navbar />
 
-      <main className="flex-1 flex flex-col container mx-auto max-w-4xl p-4 md:p-6 overflow-hidden">
-        <div className="flex-1 flex flex-col bg-[#0f172a] rounded-2xl border border-gray-800 shadow-2xl overflow-hidden">
-          <div className="bg-[#1e293b] p-4 border-bottom border-gray-700 flex justify-between items-center">
+      <main className="flex-1 flex flex-col w-full max-w-4xl mx-auto p-2 md:p-6 overflow-hidden">
+        <div className="flex-1 flex flex-col bg-[#0f172a] rounded-2xl md:rounded-3xl border border-gray-800 shadow-2xl overflow-hidden mb-16 md:mb-0">
+          <div className="bg-[#1e293b] p-3 md:p-4 border-b border-gray-700 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div
                 className={`w-3 h-3 rounded-full ${
@@ -289,7 +336,7 @@ export default function ChatPage() {
             {status !== "ideal" && (
               <button
                 onClick={nextChat}
-                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-1.5 rounded-full text-sm font-medium transition-colors border border-red-500/20"
+                className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold transition-colors border border-red-500/20"
               >
                 Next (Esc)
               </button>
@@ -346,6 +393,18 @@ export default function ChatPage() {
                   </div>
                 </div>
               ))}
+            {isPartnerTyping && (
+              <div className="flex justify-start">
+                <div className="bg-gray-800 text-gray-400 px-4 py-2 rounded-2xl text-xs flex items-center gap-2">
+                  <span>Stranger is typing</span>
+                  <span className="flex gap-1">
+                    <span className="w-1 h-1 bg-gray-500 rounded-full animate-bounce"></span>
+                    <span className="w-1 h-1 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span className="w-1 h-1 bg-gray-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                  </span>
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -365,23 +424,32 @@ export default function ChatPage() {
           )}
 
           {status === "chatting" && (
-            <form onSubmit={sendMessage} className="p-4 bg-[#1e293b] border-t border-gray-700 flex gap-4">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message here..."
-                className="flex-1 bg-[#0f172a] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors"
-                autoFocus
-              />
+            <div className="p-3 md:p-4 bg-[#1e293b] border-t border-gray-700 flex gap-2 md:gap-4 items-center">
               <button
-                type="submit"
-                disabled={!input.trim()}
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-bold transition-colors"
+                type="button"
+                onClick={nextChat}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-400 px-3 md:px-5 py-2.5 md:py-3 rounded-xl text-xs md:text-sm font-bold transition-all border border-gray-700"
               >
-                Send
+                Stop
               </button>
-            </form>
+              <form onSubmit={sendMessage} className="flex-1 flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-[#0f172a] border border-gray-700 rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-xl text-sm font-bold transition-colors shadow-lg shadow-blue-600/20"
+                >
+                  Send
+                </button>
+              </form>
+            </div>
           )}
 
           {status === "waiting" && (

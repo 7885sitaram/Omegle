@@ -136,12 +136,12 @@ export function PhoneSearchPopup({
 
   return (
     <>
-      <div className="fixed bottom-6 left-6 z-[10005] pointer-events-none">
+      <div className="fixed inset-0 z-[28000] pointer-events-none flex items-center justify-center p-4">
         {/* Search Card */}
         {isOpen && (
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="fixed left-0 md:left-16 top-[214px] w-[90vw] md:w-80 bg-white/90 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto transform transition-all duration-300 animate-in slide-in-from-left-4 z-[10001]"
+            className="w-full max-w-[340px] md:max-w-xs md:fixed md:left-16 md:top-[214px] bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto transform transition-all duration-300 animate-in fade-in zoom-in-95 md:slide-in-from-left-4 z-[10001]"
           >
             {/* Arrow connecting to Sidebar icon (4th item) */}
             <div className="absolute left-[-6px] top-[18px] w-3 h-3 bg-blue-600 rotate-45 hidden md:block shadow-[-1px_-1px_0_rgba(255,255,255,0.1)]" />
